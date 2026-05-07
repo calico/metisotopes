@@ -1,0 +1,24 @@
+Package: metisotopes
+Type: Package
+Title: Isotope Analysis and Manipulation
+Version: 1.0.0
+Author: Phil Seitzer
+Maintainer: Phil Seitzer <phillipseitzer@calicolabs.com>
+Description: Convenience functions for analyzing / processing isotopic envelopes.
+    Relies on many of the isotopic functionality in maven_core, which
+    is exposed to R via the Rcpp_isotopes.cpp file in mzkitcpp.
+License: file LICENSE
+Imports:
+  dbplyr,
+  dplyr,
+  magrittr,
+  mzkitcpp,
+  tibble,
+  tidyr
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.1
+Depends:
+  R (>= 2.10)
+Remotes:
+  calico/mzkitcpp
