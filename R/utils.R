@@ -491,3 +491,69 @@ import_isotope_mzroll <- function(mzroll_db_path, method_tag, quant_type = "peak
 
   return(mzroll_list)
 }
+
+#' Normalize isotope matrix to sample \code{[M+0]}
+#'
+#' @description
+#' Divide all non-M0 isotopes by M0 isotope abundance.
+#' \code{NA} values are retained as \code{NA}.
+#' Peaks are re-quantified to correspond to the sum of the isotopic envelope, across samples.
+#'
+#' @return norm_isotope_matrix normalized isotope matrix
+#' @export
+to_M0_normalized_isotope_matrix <- function(
+  isotope_matrix
+) {
+  isotope_matrix_norm <- isotope_matrix
+
+  norm_col <- isotope_matrix[, "C12 PARENT"]
+  cols_to_norm <- colnames(isotope_matrix)
+  cols_to_norm <- cols_to_norm[cols_to_norm != "sample"]
+
+  for (col_to_norm in cols_to_norm) {
+    isotope_matrix_norm[, col_to_norm] <- isotope_matrix[, col_to_norm] / norm_col
+  }
+
+  return(isotope_matrix_norm)
+}
+
+#' Isotope-specific design matrix
+#'
+#' @description
+#' Generate a linear-model ready design matrix from a peak group isotope_matrix,
+#' specific isotope, and categorizations related to samples data.
+#'
+#' The specific quantified isotope is renamed to 'Measurement'.
+#'
+#' The quant values are also \code{log2}-transformed.
+#' Any \code{NA}-values are filtered out.
+#'
+#' @return norm_isotope_matrix normalized isotope matrix
+#' @export
+to_emergent_isotope_design_matrix <- function(
+  isotope_matrix,
+  isotope_name,
+  t_early_control_samples,
+  t_late_control_samples,
+  t_early_treatment_samples,
+  t_late_treatment_samples
+) {
+  # adjust data frame appropriately
+  design_matrix <- isotope_matrix %>%
+    # remove any samples that are not covered by the quant matrix
+    dplyr::mutate(sample %in% t_early_control_samples | sample %in% t_late_control_samples | sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples) %>%
+    # add logic colums
+    dplyr::mutate(Treatmenttreatment = as.integer(sample %in% t_early_control_samples | sample %in% t_late_control_samples)) %>%
+    dplyr::mutate(Treatmentcontrol = as.integer(sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples)) %>%
+    dplyr::mutate(Timeearly = as.integer(sample %in% t_early_control_samples | sample %in% t_early_treatment_samples)) %>%
+    dplyr::mutate(Timelate = as.integer(sample %in% t_late_control_samples | sample %in% t_late_control_samples)) %>%
+    # rename and transform quant data
+    dplyr::rename(Measurement := !!rlang::sym(isotope_name)) %>%
+    dplyr::mutate(Measurement = log2(Measurement)) %>%
+    # remove quantities that are not evaluatable
+    dplyr::filter(!is.na(Measurement)) %>%
+    dplyr::select(Measurement, Treatmenttreatment, Timeearly, Treatmentcontrol, Timelate)
+
+  design_matrix_mat <- as.matrix(design_matrix)
+  return(design_matrix_mat)
+}

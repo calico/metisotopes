@@ -178,3 +178,36 @@ diff_iso_all_isotopes_WelchTTest_subset <- function(isotope_matrix, subset_filte
 
   return(diff_iso_all_isotopes_WelchTTest(isotope_matrix_adj, condition_1_samples, condition_2_samples))
 }
+
+
+#' Emergent Significance
+#'
+#' @description
+#' Each sample should contain in variable 'Time' factors 't_early' and a 't_late' factor levels.
+#' Each sample should contain in 'Treatment' factor 'control' and 'treatment' factor levels.
+#'
+#' [1] Initial Linear Model
+#'
+#' For each isotope, carry out the linear model
+#'
+#' Measurement ~ Time + Treatment + (Time x Treatment)
+#'
+#' Assume that the t_early and t_late samples are not from the same subjects - so it would be
+#' inappropraite to use a linear mixed effects model.
+#
+#' Focus on the interaction term (Time x Treatment), looking for a significant p-value.
+#'
+#' [2] Follow-up Games-Howell tests focusing on 't_late' vs 't_early' post-hoc comparisons
+#' Demonstrate that t_early is not significant, while t_late is.
+#'
+#' Scoring:
+#' A \code{-log10(p-value)} is computed for each kind of isotope.
+#' If a p-value cannot be computed, the score is 0 (equivalent to p-value == 1)
+#'
+#' @param design_matrix DataFrame consisting of 5 columns, Measurement,
+#' Timet_early, Timet_late, Treatmenttreatment, Treatmentcontrol.
+#'
+#' @export
+diff_iso_emergent_significance <- function(
+  design_matrix
+) {}
