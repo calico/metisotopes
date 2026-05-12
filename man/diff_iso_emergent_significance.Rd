@@ -2,7 +2,7 @@
 % Please edit documentation in R/diff_iso_scoring_functions.R
 \name{diff_iso_emergent_significance}
 \alias{diff_iso_emergent_significance}
-\title{Emergent Significance}
+\title{Time-Emergent Differential Abundance}
 \usage{
 diff_iso_emergent_significance(
   isotope_matrix,
@@ -29,8 +29,27 @@ diff_iso_emergent_significance(
 \value{
 data frame containing p-value summaries of results.
 to convert to an overall score, the \code{p_val_interaction} should be BELOW a threshold parameter,
-the \code{p_val_early_diff} should be ABOVE a threshold parameter, and
-the \code{p_val_late_diff} should be BELOW a threshold parameter.
+(p-value significant)
+the \code{p_val_early_diff} should be ABOVE a threshold parameter (p-value not significant)
+the \code{p_val_late_diff} should be BELOW a threshold parameter (p-value significant)
+
+For example,
+let isotope == [M+2], p_val_interaction = 0.0715, p_val_early_diff = 0.693, and p_val_late_diff = 0.0197.
+
+let p_val_interaction_thresh = 0.10, p_val_early_thresh = 0.05, p_val_late_thresh = 0.05.
+
+This example passes because
+(1) p_val_interaction = 0.0715 < p_val_interaction_thresh = 0.10 --> PASSES INTERACTION TERM TEST
+(2) p_val_early_thresh = 0.05 > p_val_early_diff = 0.693 --> PASSES T_EARLY TEST
+(3) p_val_late_thresh = 0.05 < p_val_late_diff = 0.0197 --> PASSES T_LATE_TEST
+
+OVERALL RESULT: this isotope shows time-emergent differential abundance.
+
+Intuitively,
+(1) Application of the treatment at a late time point revealed a significant difference compared
+.    to the control at the initial time point, the control alone, or the effect of time alone.
+(2) Application of this treatment was not significant at the initial time point (t_early).
+(3) Application of this treatment was verified at the later time-point.
 }
 \description{
 Each sample should contain a covariate 'Time', with implied reference factor level 't_early' and explicit factor level 't_late'.
