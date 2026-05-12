@@ -18,7 +18,13 @@ diff_iso_emergent_significance(
 
 \item{is_M0_normalize}{if \code{TRUE}, every isotope value is divided by the [M+0] value from its respective sample.}
 
-\item{t_early_control_samples}{sample names corresponding to \code{(Time=t_late, Treatment=treatment)}}
+\item{t_early_control_samples}{sample names corresponding to \code{(Time=t_early, Treatment=control)}}
+
+\item{t_late_control_samples}{sample names corresponding to \code{(Time=t_late, Treatment=control)}}
+
+\item{t_early_treatment_samples}{sample names corresponding to \code{(Time=t_early, Treatment=treatment)}}
+
+\item{t_late_treatment_samples}{sample names corresponding to \code{(Time=t_late, Treatment=treatment)}}
 }
 \value{
 data frame containing p-value summaries of results.

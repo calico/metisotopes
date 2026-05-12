@@ -212,9 +212,9 @@ diff_iso_all_isotopes_WelchTTest_subset <- function(isotope_matrix, subset_filte
 #' @param isotope_matrix DataFrame containing isotope measurements.
 #' @param is_M0_normalize if \code{TRUE}, every isotope value is divided by the [M+0] value from its respective sample.
 #' @param t_early_control_samples sample names corresponding to \code{(Time=t_early, Treatment=control)}
-#' @param t_early_control_samples sample names corresponding to \code{(Time=t_late, Treatment=control)}
-#' @param t_early_control_samples sample names corresponding to \code{(Time=t_early, Treatment=treatment)}
-#' @param t_early_control_samples sample names corresponding to \code{(Time=t_late, Treatment=treatment)}
+#' @param t_late_control_samples sample names corresponding to \code{(Time=t_late, Treatment=control)}
+#' @param t_early_treatment_samples sample names corresponding to \code{(Time=t_early, Treatment=treatment)}
+#' @param t_late_treatment_samples sample names corresponding to \code{(Time=t_late, Treatment=treatment)}
 #'
 #' @returns data frame containing p-value summaries of results.
 #' to convert to an overall score, the \code{p_val_interaction} should be BELOW a threshold parameter,
@@ -235,11 +235,18 @@ diff_iso_emergent_significance <- function(
 
   isotope_names <- colnames(isotope_matrix)
   isotope_names <- isotope_names[isotope_names != "sample"]
+  N <- length(isotope_names)
 
-  results <- vector(mode = "list", length = length(isotope_names))
-  names(results) <- isotope_names
+  results <- tibble::tibble(
+    isotope = isotope_names,
+    p_val_interaction = rep(NA, N),
+    p_val_early_diff = rep(NA, N),
+    p_val_late_diff = rep(NA, N)
+  )
 
-  for (isotope_name in isotope_names) {
+  for (i in 1:nrow(results)) {
+    isotope_name <- isotope_names[i]
+
     design_matrix <- to_emergent_isotope_design_matrix(
       isotope_matrix,
       isotope_name,
@@ -259,25 +266,22 @@ diff_iso_emergent_significance <- function(
     # initialize output, everything will be passed back and filtering can happen downstream
     p_val_interaction <- NA
     p_val_early_diff <- NA
-    p_val_late <- NA
+    p_val_late_diff <- NA
 
     # Safety check: ensure the interaction wasn't dropped due to singularities (NA)
-    if (nrow(stats) == 4) {
+    if ("Treatment:Time" %in% rownames(stats) && "Treatment" %in% rownames(stats)) {
       p_val_interaction <- stats["Treatment:Time", "Pr(>|t|)"]
       p_val_early_diff <- stats["Treatment", "Pr(>|t|)"]
 
       # Manual verification: Calculating the 'Late' p-value specifically
       # This asks: Is the difference between Treatment and Control at t_late significant?
       late_test <- multcomp::glht(model_results, linfct = c("Treatment + Treatment:Time = 0"))
-      p_val_late <- as.numeric(summary(late_test)$test$pvalues)
+      p_val_late_diff <- as.numeric(summary(late_test)$test$pvalues[1])
     }
 
-    results_tibble <- tibble::tibble(
-      p_val_interaction = -log10(p_val_interaction),
-      p_val_early_diff = -log10(p_val_early_diff),
-      p_val_late_diff = -log10(p_val_late)
-    )
-
-    results[[isotope_name]] <- results_tibble
+    results[i, "p_val_interaction"] <- p_val_interaction
+    results[i, "p_val_early_diff"] <- p_val_early_diff
+    results[i, "p_val_late_diff"] <- p_val_late_diff
   }
+  return(results)
 }
