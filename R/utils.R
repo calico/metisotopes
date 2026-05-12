@@ -534,26 +534,23 @@ to_emergent_isotope_design_matrix <- function(
   isotope_matrix,
   isotope_name,
   t_early_control_samples,
-  t_late_control_samples,
   t_early_treatment_samples,
+  t_late_control_samples,
   t_late_treatment_samples
 ) {
   # adjust data frame appropriately
   design_matrix <- isotope_matrix %>%
     # remove any samples that are not covered by the quant matrix
-    dplyr::mutate(sample %in% t_early_control_samples | sample %in% t_late_control_samples | sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples) %>%
+    dplyr::filter(sample %in% t_early_control_samples | sample %in% t_late_control_samples | sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples) %>%
     # add logic colums
-    dplyr::mutate(Treatmenttreatment = as.integer(sample %in% t_early_control_samples | sample %in% t_late_control_samples)) %>%
     dplyr::mutate(Treatmentcontrol = as.integer(sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples)) %>%
-    dplyr::mutate(Timeearly = as.integer(sample %in% t_early_control_samples | sample %in% t_early_treatment_samples)) %>%
-    dplyr::mutate(Timelate = as.integer(sample %in% t_late_control_samples | sample %in% t_late_control_samples)) %>%
+    dplyr::mutate(Timelate = as.integer(sample %in% t_late_control_samples | sample %in% t_late_treatment_samples)) %>%
     # rename and transform quant data
     dplyr::rename(Measurement := !!rlang::sym(isotope_name)) %>%
     dplyr::mutate(Measurement = log2(Measurement)) %>%
     # remove quantities that are not evaluatable
     dplyr::filter(!is.na(Measurement)) %>%
-    dplyr::select(Measurement, Treatmenttreatment, Timeearly, Treatmentcontrol, Timelate)
+    dplyr::select(Measurement, Treatmentcontrol, Timelate)
 
-  design_matrix_mat <- as.matrix(design_matrix)
-  return(design_matrix_mat)
+  return(design_matrix)
 }

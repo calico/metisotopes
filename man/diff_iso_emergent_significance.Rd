@@ -4,7 +4,14 @@
 \alias{diff_iso_emergent_significance}
 \title{Emergent Significance}
 \usage{
-diff_iso_emergent_significance(design_matrix)
+diff_iso_emergent_significance(
+  isotope_matrix,
+  is_M0_normalize,
+  t_early_control_samples,
+  t_late_control_samples,
+  t_early_treatment_samples,
+  t_late_treatment_samples
+)
 }
 \arguments{
 \item{design_matrix}{DataFrame consisting of 5 columns, Measurement,

@@ -8,8 +8,8 @@ to_emergent_isotope_design_matrix(
   isotope_matrix,
   isotope_name,
   t_early_control_samples,
-  t_late_control_samples,
   t_early_treatment_samples,
+  t_late_control_samples,
   t_late_treatment_samples
 )
 }

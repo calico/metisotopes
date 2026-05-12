@@ -209,5 +209,39 @@ diff_iso_all_isotopes_WelchTTest_subset <- function(isotope_matrix, subset_filte
 #'
 #' @export
 diff_iso_emergent_significance <- function(
-  design_matrix
-) {}
+  isotope_matrix,
+  is_M0_normalize,
+  t_early_control_samples,
+  t_late_control_samples,
+  t_early_treatment_samples,
+  t_late_treatment_samples
+) {
+  if (is_M0_normalize) {
+    isotope_matrix <- to_M0_normalized_isotope_matrix(isotope_matrix)
+  }
+
+  isotope_names <- colnames(isotope_matrix)
+  isotope_names <- isotope_names[isotope_names != "sample"]
+
+  results <- vector(mode = "list", length = length(isotope_names))
+  names(results) <- isotope_names
+
+  for (isotope_name in isotope_names) {
+    design_matrix <- to_emergent_isotope_design_matrix(
+      isotope_matrix,
+      isotope_name,
+      t_early_control_samples,
+      t_late_control_samples,
+      t_early_treatment_samples,
+      t_late_treatment_samples
+    )
+
+    # Step 1: linear model
+    model_results <- lm(
+      formula = Measurement ~ Treatmentcontrol * Timelate,
+      data = as.data.frame(design_matrix)
+    )
+
+    # TODO
+  }
+}
