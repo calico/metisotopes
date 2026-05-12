@@ -40,16 +40,15 @@ let p_val_interaction_thresh = 0.10, p_val_early_thresh = 0.05, p_val_late_thres
 
 This example passes because
 (1) p_val_interaction = 0.0715 < p_val_interaction_thresh = 0.10 --> PASSES INTERACTION TERM TEST
-(2) p_val_early_thresh = 0.05 > p_val_early_diff = 0.693 --> PASSES T_EARLY TEST
-(3) p_val_late_thresh = 0.05 < p_val_late_diff = 0.0197 --> PASSES T_LATE_TEST
+(2) p_val_early_diff = 0.693 > p_val_early_thresh = 0.05 --> PASSES T_EARLY TEST
+(3) p_val_late_diff = 0.0197 < p_val_late_thresh = 0.05 --> PASSES T_LATE_TEST
 
 OVERALL RESULT: this isotope shows time-emergent differential abundance.
 
 Intuitively,
-(1) Application of the treatment at a late time point revealed a significant difference compared
-.    to the control at the initial time point, the control alone, or the effect of time alone.
-(2) Application of this treatment was not significant at the initial time point (t_early).
-(3) Application of this treatment was verified at the later time-point.
+(1) The delta between treatment and control changed significantly from between the early and late time points.
+(2) There is no significant difference between treatment and control at the early time point.
+(3) There is a significant difference between treatment and control at the late time point.
 }
 \description{
 Each sample should contain a covariate 'Time', with implied reference factor level 't_early' and explicit factor level 't_late'.
