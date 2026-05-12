@@ -46,7 +46,7 @@ This example passes because
 OVERALL RESULT: this isotope shows time-emergent differential abundance.
 
 Intuitively,
-(1) The delta between treatment and control changed significantly from between the early and late time points.
+(1) The delta between treatment and control changes significantly between the early and late time points.
 (2) There is no significant difference between treatment and control at the early time point.
 (3) There is a significant difference between treatment and control at the late time point.
 }

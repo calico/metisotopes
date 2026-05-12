@@ -235,7 +235,7 @@ diff_iso_all_isotopes_WelchTTest_subset <- function(isotope_matrix, subset_filte
 #' OVERALL RESULT: this isotope shows time-emergent differential abundance.
 #'
 #' Intuitively,
-#' (1) The delta between treatment and control changed significantly from between the early and late time points.
+#' (1) The delta between treatment and control changes significantly between the early and late time points.
 #' (2) There is no significant difference between treatment and control at the early time point.
 #' (3) There is a significant difference between treatment and control at the late time point.
 #' @export
@@ -292,14 +292,20 @@ diff_iso_emergent_significance <- function(
       p_val_early_diff <- stats["Treatment", "Pr(>|t|)"]
 
       # Manual verification: Calculating the 'Late' p-value specifically
-      # This asks: Is the difference between Treatment and Control at t_late significant?
-      late_test <- multcomp::glht(model_results, linfct = c("Treatment + Treatment:Time = 0"))
-      p_val_late_diff <- as.numeric(summary(late_test)$test$pvalues[1])
+      p_val_late_diff <- suppressWarnings(tryCatch(
+        {
+          late_test <- multcomp::glht(model_results, linfct = c("Treatment + Treatment:Time = 0"))
+          as.numeric(summary(late_test)$test$pvalues[1])
+        },
+        error = function(e) {
+          return(NA)
+        }
+      ))
     }
 
-    results[i, "p_val_interaction"] <- p_val_interaction
-    results[i, "p_val_early_diff"] <- p_val_early_diff
-    results[i, "p_val_late_diff"] <- p_val_late_diff
+    results[i, "p_val_interaction"] <- ifelse(is.finite(p_val_interaction), p_val_interaction, NA)
+    results[i, "p_val_early_diff"] <- ifelse(is.finite(p_val_early_diff), p_val_early_diff, NA)
+    results[i, "p_val_late_diff"] <- ifelse(is.finite(p_val_late_diff), p_val_late_diff, NA)
   }
   return(results)
 }
