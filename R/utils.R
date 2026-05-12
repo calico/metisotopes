@@ -528,7 +528,11 @@ to_M0_normalized_isotope_matrix <- function(
 #' The quant values are also \code{log2}-transformed.
 #' Any \code{NA}-values are filtered out.
 #'
-#' @return norm_isotope_matrix normalized isotope matrix
+#' @returns design_matrix DataFrame consisting of 3 columns: \code{Measurement},
+#' \code{Treatment}, and \code{Time}. The implied reference conditions are
+#' understood to be \code{treatment} and \code{t_early}.
+#' The provided columns are non-reference factor levels.
+#'
 #' @export
 to_emergent_isotope_design_matrix <- function(
   isotope_matrix,

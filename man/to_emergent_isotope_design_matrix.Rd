@@ -14,7 +14,10 @@ to_emergent_isotope_design_matrix(
 )
 }
 \value{
-norm_isotope_matrix normalized isotope matrix
+design_matrix DataFrame consisting of 3 columns: \code{Measurement},
+\code{Treatment}, and \code{Time}. The implied reference conditions are
+understood to be \code{treatment} and \code{t_early}.
+The provided columns are non-reference factor levels.
 }
 \description{
 Generate a linear-model ready design matrix from a peak group isotope_matrix,

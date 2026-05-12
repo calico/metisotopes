@@ -14,27 +14,41 @@ diff_iso_emergent_significance(
 )
 }
 \arguments{
-\item{design_matrix}{DataFrame consisting of 5 columns, Measurement,
-Timet_early, Timet_late, Treatmenttreatment, Treatmentcontrol.}
+\item{isotope_matrix}{DataFrame containing isotope measurements.}
+
+\item{is_M0_normalize}{if \code{TRUE}, every isotope value is divided by the [M+0] value from its respective sample.}
+
+\item{t_early_control_samples}{sample names corresponding to \code{(Time=t_late, Treatment=treatment)}}
+}
+\value{
+data frame containing p-value summaries of results.
+to convert to an overall score, the \code{p_val_interaction} should be BELOW a threshold parameter,
+the \code{p_val_early_diff} should be ABOVE a threshold parameter, and
+the \code{p_val_late_diff} should be BELOW a threshold parameter.
 }
 \description{
-Each sample should contain in variable 'Time' factors 't_early' and a 't_late' factor levels.
-Each sample should contain in 'Treatment' factor 'control' and 'treatment' factor levels.
-
-[1] Initial Linear Model
+Each sample should contain a covariate 'Time', with implied reference factor level 't_early' and explicit factor level 't_late'.
+Each sample should contain a covariate 'Treatment', with implied factor level 'control' and explicit factor level 'treatment'.
 
 For each isotope, carry out the linear model
 
 Measurement ~ Time + Treatment + (Time x Treatment)
 
 Assume that the t_early and t_late samples are not from the same subjects - so it would be
-inappropraite to use a linear mixed effects model.
+inappropriate to use a linear mixed effects model.
 Focus on the interaction term (Time x Treatment), looking for a significant p-value.
 
-[2] Follow-up Games-Howell tests focusing on 't_late' vs 't_early' post-hoc comparisons
-Demonstrate that t_early is not significant, while t_late is.
+Significance must pass two p-value thresholds, one for the interaction term (must be less than this value),
+another for the comparison of condition vs treatment for the late time points (must be greater than this value).
 
-Scoring:
-A \code{-log10(p-value)} is computed for each kind of isotope.
-If a p-value cannot be computed, the score is 0 (equivalent to p-value == 1)
+[2] Follow-up Games-Howell tests focusing on 't_late' vs 't_early' post-hoc comparisons.
+
+Ultimately,the difference between treatment and control should
+(1) SHOULD have a significant \code{p_val_interaction} value,
+(2) SHOULD NOT have a significant \code{p_val_early_diff} value,
+(3) SHOULD have a significant \code{p_val_late_diff} value.
+
+Significance can be determined downstream by the consideration of these 3 p-values.
+Scores will often take the form of \code{-log10(p-value)}, where the final score should
+probably be the \code{p_val_late_diff} value.
 }
