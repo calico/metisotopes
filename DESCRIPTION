@@ -12,6 +12,7 @@ Imports:
   dbplyr,
   dplyr,
   magrittr,
+  multcomp,
   mzkitcpp,
   tibble,
   tidyr

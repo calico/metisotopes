@@ -543,14 +543,14 @@ to_emergent_isotope_design_matrix <- function(
     # remove any samples that are not covered by the quant matrix
     dplyr::filter(sample %in% t_early_control_samples | sample %in% t_late_control_samples | sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples) %>%
     # add logic colums
-    dplyr::mutate(Treatmentcontrol = as.integer(sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples)) %>%
-    dplyr::mutate(Timelate = as.integer(sample %in% t_late_control_samples | sample %in% t_late_treatment_samples)) %>%
+    dplyr::mutate(Treatment = as.integer(sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples)) %>%
+    dplyr::mutate(Time = as.integer(sample %in% t_late_control_samples | sample %in% t_late_treatment_samples)) %>%
     # rename and transform quant data
     dplyr::rename(Measurement := !!rlang::sym(isotope_name)) %>%
     dplyr::mutate(Measurement = log2(Measurement)) %>%
     # remove quantities that are not evaluatable
     dplyr::filter(!is.na(Measurement)) %>%
-    dplyr::select(Measurement, Treatmentcontrol, Timelate)
+    dplyr::select(Measurement, Treatment, Time)
 
   return(design_matrix)
 }

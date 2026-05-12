@@ -183,10 +183,9 @@ diff_iso_all_isotopes_WelchTTest_subset <- function(isotope_matrix, subset_filte
 #' Emergent Significance
 #'
 #' @description
-#' Each sample should contain in variable 'Time' factors 't_early' and a 't_late' factor levels.
-#' Each sample should contain in 'Treatment' factor 'control' and 'treatment' factor levels.
-#'
-#' [1] Initial Linear Model
+#' Each sample should contain a covariate 'Time', with implied factor levels 't_early' and a 't_late'.
+#' Each sample should contain a covariate 'Treatment', with implied factor levels 'control' and 'treatment'.
+# 't_early' is always the reference level for 'Time', while 'control' is always the reference level for 'Treatment'.
 #'
 #' For each isotope, carry out the linear model
 #'
@@ -197,14 +196,22 @@ diff_iso_all_isotopes_WelchTTest_subset <- function(isotope_matrix, subset_filte
 #
 #' Focus on the interaction term (Time x Treatment), looking for a significant p-value.
 #'
-#' [2] Follow-up Games-Howell tests focusing on 't_late' vs 't_early' post-hoc comparisons
-#' Demonstrate that t_early is not significant, while t_late is.
+#' Significance must pass two p-value thresholds, one for the interaction term (must be less than this value),
+#' another for the comparison of condition vs treatment for the late time points (must be greater than this value).
+#'
+#'
+#' If those two initial tests are satisfied ...
+#' [2] Follow-up Games-Howell tests focusing on 't_late' vs 't_early' post-hoc comparisons.
+#' The difference between treatment and control should be significant at t_late, AND NOT significant
+#' at t_early.
 #'
 #' Scoring:
 #' A \code{-log10(p-value)} is computed for each kind of isotope.
 #' If a p-value cannot be computed, the score is 0 (equivalent to p-value == 1)
 #'
-#' @param design_matrix DataFrame consisting of 5 columns, Measurement,
+#' @param design_matrix DataFrame consisting of 3 columns: \code{Measurement},
+#' \code{Treatmentcontrol}, and \code{Timelate}. The reference conditions are
+#' understood to be \code{Treatmenttreatment} and \code{Timeearly}.
 #' Timet_early, Timet_late, Treatmenttreatment, Treatmentcontrol.
 #'
 #' @export
@@ -214,7 +221,9 @@ diff_iso_emergent_significance <- function(
   t_early_control_samples,
   t_late_control_samples,
   t_early_treatment_samples,
-  t_late_treatment_samples
+  t_late_treatment_samples,
+  p_value_interaction_term_thresh = 0.10,
+  p_value_t_early_thresh = 0.10,
 ) {
   if (is_M0_normalize) {
     isotope_matrix <- to_M0_normalized_isotope_matrix(isotope_matrix)
@@ -238,10 +247,43 @@ diff_iso_emergent_significance <- function(
 
     # Step 1: linear model
     model_results <- lm(
-      formula = Measurement ~ Treatmentcontrol * Timelate,
+      formula = Measurement ~ Treatment * Time,
       data = as.data.frame(design_matrix)
     )
+    stats <- summary(model_results)$coefficients
 
-    # TODO
+    # initialize output, everything will be passed back and filtering can happen downstream
+    p_val_interaction <- NA
+    p_val_early_diff <- NA
+    p_val_late <- NA
+
+    # Safety check: ensure the interaction wasn't dropped due to singularities (NA)
+    if (nrow(stats) == 4) {
+
+      p_val_interaction <- stats["Treatment:Time", "Pr(>|t|)"]
+      p_val_early_diff <- stats["Treatment", "Pr(>|t|)"]
+
+      # Step 2: Apply your logic
+      # 1. Is the interaction significant? (Did the treatment effect change over time?)
+      # 2. Is the early difference non-significant? (Was there no effect at the start?)
+      if (p_val_interaction <= p_value_interaction_term_thresh && p_val_early_diff > p_value_t_early_thresh) {
+
+        # Step 3: Verification of the Late effect
+        # We check if (Treatmentcontrol + Interaction) is significant.
+        # The simplest way is a post-hoc comparison using 'emmeans' or manual contrast.
+
+        # Manual verification: Calculating the 'Late' p-value specifically
+        # This asks: Is the difference between Treatment and Control at t_late significant?
+        late_test <- multcomp::glht(model_results, linfct = c("Treatment + Treatment:Time = 0"))
+        p_val_late <- as.numeric(summary(late_test)$test$pvalues)
+      }
+    }
+
+    results_tibble <- tibble::tibble(
+      p_value_interaction = -log10(p_val_interaction),
+      p_val_early_diff = -log10(p_val_early_diff),
+      p_val_late_diff = -log10(p_val_late))
+
+    results[[isotope_name]] <- results_tibble
   }
 }
