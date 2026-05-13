@@ -232,3 +232,67 @@ pipeline_diff_iso_conditions_search <- function(
 
   return(conditions_rescore_results)
 }
+
+pipeline_diff_iso_emergent_abundance <- function(
+  peakdetector_executable,
+  peakdetector_methods_folder,
+  sample_directory,
+  output_directory,
+  output_file_name,
+  peakdetector_params,
+  t_early_control_samples,
+  t_early_treatment_samples,
+  t_late_control_samples,
+  t_late_treatment_samples,
+  sample_order,
+  isotope_quant_measurement_type,
+  incorporation_score_threshold,
+  condition_scoring_type = NULL, # "diff_scores", "linear_model", nothing
+  peakdetector_file = NULL,
+  verbose = TRUE
+) {
+  # hook that allows for recomputation, or skip peakdetector step
+  # (only execute rescoring)
+  if (is.null(peakdetector_file)) {
+    # [1] Prepare peakdetector command line
+    cmd <- clamshell::peakdetector_command_line(
+      peakdetector_executable,
+      peakdetector_methods_folder,
+      sample_directory,
+      output_directory,
+      peakdetector_params
+    )
+
+    # [3] Create unscored mzrollDB file
+    tictoc::tic("Peakgroup detection, isotope extraction, and compound identification")
+    system(cmd, ignore.stdout = !verbose, ignore.stderr = TRUE)
+    tictoc::toc()
+
+    # [4] rename output file to desired name
+    default_mzrolldb_file <- file.path(output_directory, "peakdetector.mzrollDB")
+    output_file_path <- file.path(output_directory, output_file_name)
+    file.rename(default_mzrolldb_file, output_file_path)
+  } else {
+    file.copy(peakdetector_file, output_file_path)
+  }
+
+  # [5] isotopic incorporation
+  isotopic_incorporation_scores <- compute_isotopic_incorporation(
+    mzrolldb_file_path,
+    isotope_quant_measurement_type,
+    t_early_control_samples,
+    t_early_treatment_samples,
+    t_late_control_samples,
+    t_late_treatment_samples,
+    sample_order
+  )
+
+  # [6] differential isotopic incorporation
+  if (condition_scoring_type == "diff_scores") {} else if (condition_scoring_type == "linear_model") {
+    # fall back to using isotopic incorporation only
+  } else {}
+
+  # [7] update mzrolldb file
+
+  # [8] return report with all results
+}

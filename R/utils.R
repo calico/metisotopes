@@ -558,3 +558,85 @@ to_emergent_isotope_design_matrix <- function(
 
   return(design_matrix)
 }
+
+#' Determine Isotopic Incorporation
+#'
+#' @description
+#' Generate a linear-model ready design matrix from a peak group isotope_matrix,
+#' specific isotope, and categorizations related to samples data.
+#'
+#' The specific quantified isotope is renamed to 'Measurement'.
+#'
+#' The quant values are also \code{log2}-transformed.
+#' Any \code{NA}-values are filtered out.
+#'
+#' @returns design_matrix DataFrame consisting of 3 columns: \code{Measurement},
+#' \code{Treatment}, and \code{Time}. The implied reference conditions are
+#' understood to be \code{treatment} and \code{t_early}.
+#' The provided columns are non-reference factor levels.
+#'
+#' @export
+compute_isotopic_incorporation <- function(
+  mzrolldb_file_path,
+  isotope_quant_measurement_type,
+  t_early_control_samples,
+  t_early_treatment_samples,
+  t_late_control_samples,
+  t_late_treatment_samples,
+  sample_order
+) {
+  iso_matrices_df <- get_precomputed_iso_df(
+    iso_mzrolldb_file = mzrolldb_file_path,
+    isotope_quant_measurement_type = isotope_quant_measurement_type,
+    is_fractional_abundance = TRUE,
+    sample_order = sample_order
+  )
+
+  iso_matrices_df_header <- iso_matrices_df %>%
+    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName, ms2Score) %>%
+    dplyr::distinct()
+
+  iso_matrices_list <- to_iso_matrices(iso_matrices_df)
+
+  # Control t_early vs Control t_late
+  incorporation_scores_control <- purrr::map(
+    iso_matrices_list,
+    metisotopes::diff_iso_m_plus_zero_fraction_WelchTTest,
+    t_early_control_samples,
+    t_late_control_samples
+  )
+
+  control_scores_tibble <- tibble::tibble(
+    groupId = as.integer(names(incorporation_scores_control)),
+    groupRank = unlist(incorporation_scores_control),
+    subset = "Control"
+  ) %>%
+    dplyr::inner_join(iso_matrices_df_header, by = c("groupId"))
+
+  # Treatment t_early vs Treatment t_late
+  incorporation_scores_treatment <- purrr::map(
+    iso_matrices_list,
+    metisotopes::diff_iso_m_plus_zero_fraction_WelchTTest,
+    t_early_treatment_samples,
+    t_late_treatment_samples
+  )
+
+  treatment_scores_tibble <- tibble::tibble(
+    groupId = as.integer(names(incorporation_scores_treatment)),
+    groupRank = unlist(incorporation_scores_treatment),
+    subset = "Treatment"
+  ) %>%
+    dplyr::inner_join(iso_matrices_df_header, by = c("groupId"))
+
+  # Agglomerated incorporation score list - significant in either case
+  isotopic_incorporation_scores <- rbind(control_scores_tibble, treatment_scores_tibble) %>%
+    dplyr::arrange(desc(groupRank)) %>%
+    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName, ms2Score, groupRank, subset)
+
+  return(isotopic_incorporation_scores)
+
+  # sig_scores <- isotopic_incorporation_scores %>%
+  #    dplyr::filter(groupRank >= incorporation_score_threshold)
+
+  # incorporation_group_ids <- as.character(unique(sig_scores$groupId))
+}
