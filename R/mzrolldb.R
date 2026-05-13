@@ -107,7 +107,8 @@ label_isotopes_by_top_hits <- function(
   sig_matches <- top_hits %>%
     dplyr::select(groupId, isotope, groupRank) %>%
     dplyr::mutate(label_add = "a") %>%
-    dplyr::distinct()
+    dplyr::distinct() %>%
+    dplyr::mutate(groupId = as.numeric(groupId))
 
   sig_parents <- sig_scores %>%
     dplyr::select(groupId, groupRank) %>%
