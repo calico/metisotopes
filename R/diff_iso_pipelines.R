@@ -246,8 +246,9 @@ pipeline_diff_iso_emergent_abundance <- function(
   t_late_treatment_samples,
   sample_order,
   isotope_quant_measurement_type,
-  incorporation_score_threshold,
-  condition_scoring_type = NULL, # "diff_scores", "linear_model", nothing
+  incorporation_score_threshold = 1.30103, # -log10(0.05),
+  diff_score_threshold = 1.30103, # -log10(0.05),
+  condition_scoring_type = NULL, # "diff_scores", "linear_model", "no-rescoring", nothing
   peakdetector_file = NULL,
   verbose = TRUE
 ) {
@@ -276,6 +277,11 @@ pipeline_diff_iso_emergent_abundance <- function(
     file.copy(peakdetector_file, output_file_path)
   }
 
+  # No isotopic incorporation scoring nor time-emergent differential abundance scoring
+  if (condition_scoring_type == "no-rescoring") {
+    return(invisible(0))
+  }
+
   # [5] isotopic incorporation
   isotopic_incorporation_scores <- compute_isotopic_incorporation(
     mzrolldb_file_path,
@@ -288,9 +294,21 @@ pipeline_diff_iso_emergent_abundance <- function(
   )
 
   # [6] differential isotopic incorporation
-  if (condition_scoring_type == "diff_scores") {} else if (condition_scoring_type == "linear_model") {
+  if (condition_scoring_type == "linear_model") {
+    # TODO: linear model scoring
+  } else if (condition_scoring_type == "diff_scores") {
+    pipeline_scores <- compute_diff_scores(
+      mzrolldb_file_path,
+      isotopic_incorporation_scores,
+      isotope_quant_measurement_type,
+      sample_order,
+      diff_score_threshold
+    )
+
     # fall back to using isotopic incorporation only
-  } else {}
+  } else {
+    pipeline_scores <- isotopic_incorporation_scores
+  }
 
   # [7] update mzrolldb file
 

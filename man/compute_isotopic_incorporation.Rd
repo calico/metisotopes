@@ -11,21 +11,40 @@ compute_isotopic_incorporation(
   t_early_treatment_samples,
   t_late_control_samples,
   t_late_treatment_samples,
-  sample_order
+  sample_order,
+  incorporation_score_threshold = 1.30103
 )
 }
+\arguments{
+\item{mzrolldb_file_path}{full path to mzrollDB file, which should already exist
+and contain peak groups with isotopic envelopes.}
+
+\item{isotope_quant_measurement_type}{Specific quant type used for evaluation.
+For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \code{peakIntensity}.}
+
+\item{t_early_control_samples}{vector of sample names corresponding to \code{(t_early, control)} covariates.}
+
+\item{t_early_treatment_samples}{vector of sample names corresponding to \code{(t_early, treatment)} covariates.}
+
+\item{t_late_control_samples}{vector of sample names corresponding to \code{(t_late, control)} covariates.}
+
+\item{t_late_treatment_samples}{vector of samples names corresponding to \code{(t_late, treatment)} covariates.}
+
+\item{sample_order}{vector of all sample names, in desired order. Will be used for various sample display metrics.}
+}
 \value{
-design_matrix DataFrame consisting of 3 columns: \code{Measurement},
-\code{Treatment}, and \code{Time}. The implied reference conditions are
-understood to be \code{treatment} and \code{t_early}.
-The provided columns are non-reference factor levels.
+table of annotated results containing columns \code{groupId}, \code{groupMz}, \code{groupRt},
+\code{compoundName}, \code{adductName}, \code{ms2Score}, \code{groupRank}, \code{subset}, and \code{is_isotopic_incorporation}.
+\code{groupRank} is used for the isotopic incorporation score.
 }
 \description{
-Generate a linear-model ready design matrix from a peak group isotope_matrix,
-specific isotope, and categorizations related to samples data.
-
-The specific quantified isotope is renamed to 'Measurement'.
-
-The quant values are also \code{log2}-transformed.
-Any \code{NA}-values are filtered out.
+Determine peak groups where isotopic incorporation has occurred.
+Each peak group is assessed using two separate tests:
+\code{t_early} is compared to \code{t_late} for both the \code{control} sample subset
+and the \code{treatment} sample subset.
+The comparison is made by determining the fractional contribution of the \code{[M+0]} species
+in each sample, and then carrying out a Welch t-test comparing \code{t_early} to \code{t_late}
+in each separate \code{control} and \code{treatment} sample subset.
+If either subset is significant, the feature is annotated as having undergone isotopic incorporation.
+A threshold for significane is provided, which by default is \code{-log10(0.05) = 1.30103}.
 }

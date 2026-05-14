@@ -562,18 +562,29 @@ to_emergent_isotope_design_matrix <- function(
 #' Determine Isotopic Incorporation
 #'
 #' @description
-#' Generate a linear-model ready design matrix from a peak group isotope_matrix,
-#' specific isotope, and categorizations related to samples data.
+#' Determine peak groups where isotopic incorporation has occurred.
+#' Each peak group is assessed using two separate tests:
+#' \code{t_early} is compared to \code{t_late} for both the \code{control} sample subset
+#' and the \code{treatment} sample subset.
+#' The comparison is made by determining the fractional contribution of the \code{[M+0]} species
+#' in each sample, and then carrying out a Welch t-test comparing \code{t_early} to \code{t_late}
+#' in each separate \code{control} and \code{treatment} sample subset.
+#' If either subset is significant, the feature is annotated as having undergone isotopic incorporation.
+#' A threshold for significane is provided, which by default is \code{-log10(0.05) = 1.30103}.
 #'
-#' The specific quantified isotope is renamed to 'Measurement'.
+#' @param mzrolldb_file_path full path to mzrollDB file, which should already exist
+#' and contain peak groups with isotopic envelopes.
+#' @param isotope_quant_measurement_type Specific quant type used for evaluation.
+#' For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \code{peakIntensity}.
+#' @param t_early_control_samples vector of sample names corresponding to \code{(t_early, control)} covariates.
+#' @param t_early_treatment_samples vector of sample names corresponding to \code{(t_early, treatment)} covariates.
+#' @param t_late_control_samples vector of sample names corresponding to \code{(t_late, control)} covariates.
+#' @param t_late_treatment_samples vector of samples names corresponding to \code{(t_late, treatment)} covariates.
+#' @param sample_order vector of all sample names, in desired order. Will be used for various sample display metrics.
 #'
-#' The quant values are also \code{log2}-transformed.
-#' Any \code{NA}-values are filtered out.
-#'
-#' @returns design_matrix DataFrame consisting of 3 columns: \code{Measurement},
-#' \code{Treatment}, and \code{Time}. The implied reference conditions are
-#' understood to be \code{treatment} and \code{t_early}.
-#' The provided columns are non-reference factor levels.
+#' @returns table of annotated results containing columns \code{groupId}, \code{groupMz}, \code{groupRt},
+#' \code{compoundName}, \code{adductName}, \code{ms2Score}, \code{groupRank}, \code{subset}, and \code{is_isotopic_incorporation}.
+#' \code{groupRank} is used for the isotopic incorporation score.
 #'
 #' @export
 compute_isotopic_incorporation <- function(
@@ -583,7 +594,8 @@ compute_isotopic_incorporation <- function(
   t_early_treatment_samples,
   t_late_control_samples,
   t_late_treatment_samples,
-  sample_order
+  sample_order,
+  incorporation_score_threshold = 1.30103 # -log10(0.05)
 ) {
   iso_matrices_df <- get_precomputed_iso_df(
     iso_mzrolldb_file = mzrolldb_file_path,
@@ -631,12 +643,110 @@ compute_isotopic_incorporation <- function(
   # Agglomerated incorporation score list - significant in either case
   isotopic_incorporation_scores <- rbind(control_scores_tibble, treatment_scores_tibble) %>%
     dplyr::arrange(desc(groupRank)) %>%
-    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName, ms2Score, groupRank, subset)
+    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName, ms2Score, groupRank, subset) %>%
+    dplyr::mutate(is_isotopic_incorporation = groupRank >= incorporation_score_threshold)
 
   return(isotopic_incorporation_scores)
-
-  # sig_scores <- isotopic_incorporation_scores %>%
-  #    dplyr::filter(groupRank >= incorporation_score_threshold)
-
-  # incorporation_group_ids <- as.character(unique(sig_scores$groupId))
 }
+
+#' Subset Diff Scores
+#'
+#' @description
+#' This step should follow isotopic incorporation, and as it requires as an input the
+#' \code{isotopic_incorporation_scores} computed by \code{compute_isotopic_incorporation()}.
+#'
+#' For each isotope associatd with each feature,
+#' control and treatment subsets are determined. Each subset is separately subjected to a Welch t-test.
+#' Then, the absolute score difference is taken of the \code{-log10(p-value)} from each test.
+#' Mathematically, this is equivalent to a ratio of p-values.
+#' If insufficient measurements are available to make a test, the score for one covariate subset is \code{0}.
+#'
+#' This test may be useful for cases where more complex, integrated statistical tests might not be
+#' computable. However, this function should probably be used in conjunction with the standard approach,
+#' which constructs a linear model containing all samples/information (see \code{compute_time_emergent_diff_linear_model()}).
+#'
+#' @param mzrolldb_file_path full path to mzrollDB file, which should already exist
+#' and contain peak groups with isotopic envelopes.
+#' @param isotope_quant_measurement_type Specific quant type used for evaluation.
+#' For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \code{peakIntensity}.
+#' @param t_early_control_samples vector of sample names corresponding to \code{(t_early, control)} covariates.
+#' @param t_early_treatment_samples vector of sample names corresponding to \code{(t_early, treatment)} covariates.
+#' @param t_late_control_samples vector of sample names corresponding to \code{(t_late, control)} covariates.
+#' @param t_late_treatment_samples vector of samples names corresponding to \code{(t_late, treatment)} covariates.
+#' @param sample_order vector of all sample names, in desired order. Will be used for various sample display metrics.
+#' @param score_diff_threshold threshold for determining signficance. By default, \code{-log10(0.05) = 1.30103}.
+#'
+#' @returns design_matrix DataFrame consisting of 3 columns: \code{Measurement},
+#' \code{Treatment}, and \code{Time}. The implied reference conditions are
+#' understood to be \code{treatment} and \code{t_early}.
+#' The provided columns are non-reference factor levels.
+#'
+#' @export
+compute_diff_scores <- function(
+  mzrolldb_file_path,
+  isotopic_incorporation_scores,
+  isotope_quant_measurement_type,
+  sample_order,
+  score_diff_threshold = 1.30103 # -log10(0.05)
+) {
+  sig_scores <- isotopic_incorporation_scores %>%
+    dplyr::filter(is_isotopic_incorporation) %>%
+    dplyr::select(-is_isotopic_incorporation)
+
+  incorporation_group_ids <- as.character(unique(sig_scores$groupId))
+
+  iso_matrices_conditional_df <- get_precomputed_iso_df(
+    iso_mzrolldb_file = mzrolldb_file_path,
+    isotope_quant_measurement_type = isotope_quant_measurement_type,
+    is_fractional_abundance = FALSE,
+    sample_order = sample_order
+  )
+
+  iso_matrices_conditional_df_list <- to_iso_matrices(iso_matrices_conditional_df)
+
+  incorporation_subset <- iso_matrices_conditional_df_list[incorporation_group_ids]
+
+  # Treatment t_early vs Control t_early
+  treatment_vs_control_t_early <- purrr::map(
+    incorporation_subset,
+    diff_iso_all_isotopes_WelchTTest,
+    t_early_control_samples,
+    t_early_treatment_samples
+  )
+  treatment_vs_control_t_early_tibble <- dplyr::bind_rows(treatment_vs_control_t_early, .id = "groupId") %>%
+    dplyr::rename(unlabeled_score = score)
+
+  # Treatment t_late vs Control t_late
+  treatment_vs_control_t_late <- purrr::map(
+    incorporation_subset,
+    diff_iso_all_isotopes_WelchTTest,
+    t_late_control_samples,
+    t_late_treatment_samples
+  )
+
+  treatment_vs_control_t_late_tibble <- dplyr::bind_rows(treatment_vs_control_t_late, .id = "groupId") %>%
+    dplyr::rename(labeled_score = score)
+
+  treatment_vs_control_combined <- dplyr::full_join(
+    treatment_vs_control_t_early_tibble, treatment_vs_control_t_late_tibble,
+    by = c("groupId", "isotope")
+  ) %>%
+    dplyr::mutate(score_diff = abs(unlabeled_score - labeled_score)) %>%
+    dplyr::mutate(groupId = as.integer(groupId)) %>%
+    dplyr::arrange(desc(score_diff))
+
+  treatment_vs_control_w_header <- treatment_vs_control_combined %>%
+    dplyr::inner_join(sig_scores, by = c("groupId"), relationship = "many-to-many") %>%
+    dplyr::rename(
+      incorporation_subset = subset,
+      score_t_late = labeled_score,
+      score_t_early = unlabeled_score
+    )
+
+  diff_scores <- treatment_vs_control_w_header %>%
+    dplyr::mutate(is_high_score_diff = score_diff >= score_diff_threshold)
+
+  return(diff_scores)
+}
+
+compute_time_emergent_diff_linear_model <- function() {}
