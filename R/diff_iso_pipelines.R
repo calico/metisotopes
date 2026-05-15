@@ -233,25 +233,77 @@ pipeline_diff_iso_conditions_search <- function(
   return(conditions_rescore_results)
 }
 
-pipeline_diff_iso_emergent_abundance <- function(
+#' Pipeline Time-Emergent Differential Abundance
+#'
+#' @description Time-Emergent Differential Abundance pipeline - given files and parameters,
+#' return an mzrollDB file contaning peaks, groups, and isotopic envelopes.
+#' Envelopes where isotopic incorporation are indicated with blue circles.
+#' Envelopes where time-emergent differential abundance are indicated with magenta circles.
+#' This is all encoded in maven as 'c' and 'a' labeled peak groups.
+#'
+#' Please see constituent functions \code{compute_isotopic_incorporation()}, \code{compute_diff_scores()},
+#' and \code{compute_time_emergent_diff_linear_model()} for more details.
+#'
+#' @param peakdetector_executable absolute path to compiled peakdetector executable.
+#' @param peakdetector_methods_folder absolute path to peakdetector methods folder.
+#' @param peakdetector_params list of peakdetector parameters.
+#' @param sample_directory absolute path to directory containing all \code{mzML} files.
+#' @param output_directory output directory for mzrollDB files.
+#' @param output_file_name name of mzrollDB output file.
+#' @param isotope_quant_measurement_type Specific quant type used for evaluation.
+#' For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \code{peakIntensity}.
+#' @param t_early_control_samples sample names corresponding to \code{(Time=t_early, Treatment=control)}
+#' @param t_late_control_samples sample names corresponding to \code{(Time=t_late, Treatment=control)}
+#' @param t_early_treatment_samples sample names corresponding to \code{(Time=t_early, Treatment=treatment)}
+#' @param t_late_treatment_samples sample names corresponding to \code{(Time=t_late, Treatment=treatment)}
+#' @param sample_order vector of all sample names, in desired order. Will be used for various sample display metrics.
+#' @param peakdetector_file default: \code{NULL}. If provided and not NULL, skip the peakdetector
+#' generation step, and instead start from the provided peakdetector file.
+#' This file will be copied and rescored.
+#' @param incorporation_score_threshold \code{-log10(p-value)} score threshold from Welch t-test,
+#' carried out with \code{t_early} vs \code{t_late} each in \code{treatment} and \code{condition} sample subsets.
+#' If a peak group is significant from either subset, the peak group passes.
+#' @param diff_score_threshold Used for flagging things according to \code{compute_diff_scores()},
+#' which is approximately a ratio of p-values score.
+#' @param p_val_interaction_threshold - used for \code{compute_time_emergent_diff_linear_model()}.
+#' Applies to interaction term from linear model. See \code{diff_iso_emergent_significance()}.
+#' @param  p_val_t_early_threshold - used for \code{compute_time_emergent_diff_linear_model()}.
+#' Applies to \code{t_early} comparison of \code{control} vs \code{treatment}.
+#' See \code{compute_time_emergent_diff_linear_model()} and \code{diff_iso_emergent_significance()}.
+#' @param p_val_t_late_threshold - used for \code{compute_time_emergent_diff_linear_model()}.
+#' Applies to \code{t_early} comparison of \code{control} vs \code{treatment}.
+#' See \code{compute_time_emergent_diff_linear_model()} and \code{diff_iso_emergent_significance()}.
+#' the \code{p_val_early_diff} should be ABOVE a threshold parameter (p-value not significant)
+#' the \code{p_val_late_diff} should be BELOW a threshold parameter (p-value significant).
+#' @param is_M0_normalize if \code{TRUE}, every isotope value is divided by the [M+0] value from its respective sample,
+#' in \code{compute_time_emergent_diff_linear_model()}. Note that values are always Log-transformed
+#' for that linear model, this additional step first divides isotope values by corresponding [M+0]
+#' value in the envelope.
+#' @param verbose if \code{TRUE}, print additional messages to the console.
+#'
+#' @export
+pipeline_time_emergent_differential_abundance <- function(
   peakdetector_executable,
   peakdetector_methods_folder,
   sample_directory,
   output_directory,
   output_file_name,
   peakdetector_params,
+  isotope_quant_measurement_type,
   t_early_control_samples,
   t_early_treatment_samples,
   t_late_control_samples,
   t_late_treatment_samples,
   sample_order,
-  isotope_quant_measurement_type,
   peakdetector_file = NULL,
   incorporation_score_threshold = 1.30103, # -log10(0.05),
   diff_score_threshold = 1.30103, # -log10(0.05),
+  p_val_interaction_threshold = 0.10,
+  p_val_t_early_threshold = 0.05,
+  p_val_t_late_threshold = 0.05,
+  is_filter_M0_normalize = TRUE,
   verbose = TRUE
 ) {
-
   # need full path for output file
   mzrolldb_file_path <- file.path(output_directory, output_file_name)
 
@@ -295,28 +347,51 @@ pipeline_diff_iso_emergent_abundance <- function(
     mzrolldb_file_path,
     isotopic_incorporation_scores,
     isotope_quant_measurement_type,
+    t_early_control_samples,
+    t_early_treatment_samples,
+    t_late_control_samples,
+    t_late_treatment_samples,
     sample_order,
     diff_score_threshold
   )
 
   # [7] Time-emergent differential abundance
   lm_scores <- compute_time_emergent_diff_linear_model(
-
+    mzrolldb_file_path,
+    isotopic_incorporation_scores,
+    isotope_quant_measurement_type,
+    t_early_control_samples,
+    t_early_treatment_samples,
+    t_late_control_samples,
+    t_late_treatment_samples,
+    sample_order,
+    p_val_interaction_threshold,
+    p_val_t_early_threshold,
+    p_val_t_late_threshold,
+    is_filter_M0_normalize
   )
 
   # [8] update mzrolldb file, labeling peak groups and updating groupRank column
   # with new score values
+  top_hits <- lm_scores %>%
+    dplyr::group_by(groupId, isotope) %>%
+    dplyr::mutate(groupRank = max(emergentScore)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(groupId, isotope, groupRank) %>%
+    dplyr::distinct()
+
   label_isotopes_by_top_hits(
     mzrolldb_file_path,
     top_hits,
     sig_scores
-    )
+  )
 
   # [9] return scoring results as output
   scoring_results <- list(
-    "isotopic_incorporation_scores"= isotopic_incorporation_scores,
+    "isotopic_incorporation_scores" = isotopic_incorporation_scores,
     "diff_scores" = diff_scores,
-    "lm_scores"= lm_scores)
+    "lm_scores" = lm_scores
+  )
 
   return(scoring_results)
 }

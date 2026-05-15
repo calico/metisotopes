@@ -686,6 +686,10 @@ compute_diff_scores <- function(
   mzrolldb_file_path,
   isotopic_incorporation_scores,
   isotope_quant_measurement_type,
+  t_early_control_samples,
+  t_early_treatment_samples,
+  t_late_control_samples,
+  t_late_treatment_samples,
   sample_order,
   score_diff_threshold = 1.30103 # -log10(0.05)
 ) {
@@ -749,4 +753,72 @@ compute_diff_scores <- function(
   return(diff_scores)
 }
 
-compute_time_emergent_diff_linear_model <- function() {}
+compute_time_emergent_diff_linear_model <- function(
+  mzrolldb_file_path,
+  isotopic_incorporation_scores,
+  isotope_quant_measurement_type,
+  t_early_control_samples,
+  t_early_treatment_samples,
+  t_late_control_samples,
+  t_late_treatment_samples,
+  sample_order,
+  p_val_interaction_threshold = 0.10,
+  p_val_t_early_threshold = 0.05,
+  p_val_t_late_threshold = 0.05,
+  is_filter_M0_normalize = TRUE
+) {
+  iso_matrices_conditional_df <- metisotopes::get_precomputed_iso_df(
+    iso_mzrolldb_file = mzrolldb_file_path,
+    isotope_quant_measurement_type = isotope_quant_measurement_type,
+    is_fractional_abundance = FALSE,
+    sample_order = sample_order
+  )
+
+  iso_matrices_conditional_df_list <- metisotopes::to_iso_matrices(iso_matrices_conditional_df)
+
+  incorporation_subset <- iso_matrices_conditional_df_list[incorporation_group_ids]
+
+  emergent_significance_no_M0_norm <- purrr::map(
+    incorporation_subset,
+    diff_iso_emergent_significance,
+    FALSE,
+    t_early_control_samples,
+    t_late_control_samples,
+    t_early_treatment_samples,
+    t_late_treatment_samples
+  )
+
+  emergent_significance_no_M0_norm_tibble <- dplyr::bind_rows(emergent_significance_no_M0_norm, .id = "groupId") %>%
+    dplyr::mutate(is_M0_normalize = FALSE)
+
+  emergent_significance_M0_norm <- purrr::map(
+    incorporation_subset,
+    diff_iso_emergent_significance,
+    TRUE,
+    t_early_control_samples,
+    t_late_control_samples,
+    t_early_treatment_samples,
+    t_late_treatment_samples
+  )
+
+  emergent_significance_M0_norm_tibble <- dplyr::bind_rows(emergent_significance_M0_norm, .id = "groupId") %>%
+    dplyr::mutate(is_M0_normalize = TRUE)
+
+  combined_emergent_significance <- rbind(emergent_significance_no_M0_norm_tibble, emergent_significance_M0_norm_tibble) %>%
+    dplyr::mutate(emergentScore = -log10(p_val_late_diff)) %>%
+    dplyr::arrange(desc(emergentScore))
+
+  lm_scores <- combined_emergent_significance %>%
+    # Remove NA values
+    dplyr::filter(!is.na(p_val_interaction) & !is.na(p_val_early_diff) & !is.na(p_val_late_diff)) %>%
+    # (1) delta between treatment and control changes between t_early and t_late
+    dplyr::mutate(is_p_val_interaction = p_val_interaction <= p_val_interaction_threshold) %>%
+    # (2) treatment and control is not different in t_early
+    dplyr::mutate(is_p_val_early_diff = p_val_early_diff >= p_val_t_early_threshold) %>%
+    # (3) treatment and control is different in t_late
+    dplyr::mutate(is_p_val_late_diff = p_val_late_diff <= p_val_t_late_threshold) %>%
+    # Sample-specific normalization to M0
+    dplyr::filter(!is_filter_M0_normalize | (is_filter_M0_normalize & is_M0_normalize))
+
+  return(lm_scores)
+}

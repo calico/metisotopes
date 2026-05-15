@@ -8,6 +8,10 @@ compute_diff_scores(
   mzrolldb_file_path,
   isotopic_incorporation_scores,
   isotope_quant_measurement_type,
+  t_early_control_samples,
+  t_early_treatment_samples,
+  t_late_control_samples,
+  t_late_treatment_samples,
   sample_order,
   score_diff_threshold = 1.30103
 )
@@ -19,10 +23,6 @@ and contain peak groups with isotopic envelopes.}
 \item{isotope_quant_measurement_type}{Specific quant type used for evaluation.
 For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \code{peakIntensity}.}
 
-\item{sample_order}{vector of all sample names, in desired order. Will be used for various sample display metrics.}
-
-\item{score_diff_threshold}{threshold for determining signficance. By default, \code{-log10(0.05) = 1.30103}.}
-
 \item{t_early_control_samples}{vector of sample names corresponding to \code{(t_early, control)} covariates.}
 
 \item{t_early_treatment_samples}{vector of sample names corresponding to \code{(t_early, treatment)} covariates.}
@@ -30,6 +30,10 @@ For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \c
 \item{t_late_control_samples}{vector of sample names corresponding to \code{(t_late, control)} covariates.}
 
 \item{t_late_treatment_samples}{vector of samples names corresponding to \code{(t_late, treatment)} covariates.}
+
+\item{sample_order}{vector of all sample names, in desired order. Will be used for various sample display metrics.}
+
+\item{score_diff_threshold}{threshold for determining signficance. By default, \code{-log10(0.05) = 1.30103}.}
 }
 \value{
 design_matrix DataFrame consisting of 3 columns: \code{Measurement},
