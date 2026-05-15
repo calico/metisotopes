@@ -93,14 +93,14 @@ PDB_peakgroups <- function(mzrolldb_file_path) {
 #' @param mzrolldb_file_path file path to mzrolldb file
 #' @param top_hits tibble consisting of at least columns \code{groupId}, \code{isotope}, and \code{groupRank} columns,
 #' where \code{groupRank} refers to an isotope-specific score
-#' @param sig_scores tibble consisting of at least columns \code{groupId}, \code{groupRank}, where \code{groupRank}
+#' @param sig_isotopic_incorporation_scores tibble consisting of at least columns \code{groupId}, \code{groupRank}, where \code{groupRank}
 #' refers only to a score associated with evidence of isotopic incorporation.
 #'
 #' @export
 label_isotopes_by_top_hits <- function(
   mzrolldb_file_path,
   top_hits,
-  sig_scores
+  sig_isotopic_incorporation_scores
 ) {
   all_groups <- clamshell::PDB_peakgroups(mzrolldb_file_path)
 
@@ -110,7 +110,7 @@ label_isotopes_by_top_hits <- function(
     dplyr::distinct() %>%
     dplyr::mutate(groupId = as.numeric(groupId))
 
-  sig_parents <- sig_scores %>%
+  sig_parents <- sig_isotopic_incorporation_scores %>%
     dplyr::select(groupId, groupRank) %>%
     dplyr::group_by(groupId) %>%
     dplyr::mutate(groupRank = max(groupRank)) %>%

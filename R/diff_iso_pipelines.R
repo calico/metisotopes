@@ -342,11 +342,11 @@ pipeline_time_emergent_differential_abundance <- function(
     sample_order
   )
 
-  sig_scores <- isotopic_incorporation_scores %>%
+  sig_isotopic_incorporation_scores <- isotopic_incorporation_scores %>%
     dplyr::filter(is_isotopic_incorporation) %>%
     dplyr::select(-is_isotopic_incorporation)
 
-  incorporation_group_ids <- as.character(unique(sig_scores$groupId))
+  incorporation_group_ids <- as.character(unique(sig_isotopic_incorporation_scores$groupId))
 
   iso_matrices_conditional_df <- get_precomputed_iso_df(
     iso_mzrolldb_file = mzrolldb_file_path,
@@ -398,7 +398,7 @@ pipeline_time_emergent_differential_abundance <- function(
   label_isotopes_by_top_hits(
     mzrolldb_file_path,
     top_hits,
-    sig_scores
+    sig_isotopic_incorporation_scores
   )
 
   # [9] return scoring results as output

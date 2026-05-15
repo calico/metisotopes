@@ -4,7 +4,11 @@
 \alias{label_isotopes_by_top_hits}
 \title{Label mzrollDB file}
 \usage{
-label_isotopes_by_top_hits(mzrolldb_file_path, top_hits, sig_scores)
+label_isotopes_by_top_hits(
+  mzrolldb_file_path,
+  top_hits,
+  sig_isotopic_incorporation_scores
+)
 }
 \arguments{
 \item{mzrolldb_file_path}{file path to mzrolldb file}
@@ -12,7 +16,7 @@ label_isotopes_by_top_hits(mzrolldb_file_path, top_hits, sig_scores)
 \item{top_hits}{tibble consisting of at least columns \code{groupId}, \code{isotope}, and \code{groupRank} columns,
 where \code{groupRank} refers to an isotope-specific score}
 
-\item{sig_scores}{tibble consisting of at least columns \code{groupId}, \code{groupRank}, where \code{groupRank}
+\item{sig_isotopic_incorporation_scores}{tibble consisting of at least columns \code{groupId}, \code{groupRank}, where \code{groupRank}
 refers only to a score associated with evidence of isotopic incorporation.}
 }
 \description{
