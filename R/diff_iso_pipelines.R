@@ -362,6 +362,7 @@ pipeline_time_emergent_differential_abundance <- function(
   # [6] differential isotopic incorporation via diff scores
   diff_scores <- compute_diff_scores(
     incorporation_subset,
+    sig_isotopic_incorporation_scores,
     t_early_control_samples,
     t_early_treatment_samples,
     t_late_control_samples,

@@ -666,6 +666,7 @@ compute_isotopic_incorporation <- function(
 #' which constructs a linear model containing all samples/information (see \code{compute_time_emergent_diff_linear_model()}).
 #'
 #' @param incorporation_subset list of isotope matrices that should be assessed for differences.
+#' @param sig_isotopic_incorporation_scores tibble containing scores information, filtered tibble from \code{compute_isotopic_incorporation()}
 #' @param t_early_control_samples vector of sample names corresponding to \code{(t_early, control)} covariates.
 #' @param t_early_treatment_samples vector of sample names corresponding to \code{(t_early, treatment)} covariates.
 #' @param t_late_control_samples vector of sample names corresponding to \code{(t_late, control)} covariates.
@@ -681,6 +682,7 @@ compute_isotopic_incorporation <- function(
 #' @export
 compute_diff_scores <- function(
   incorporation_subset,
+  sig_isotopic_incorporation_scores,
   t_early_control_samples,
   t_early_treatment_samples,
   t_late_control_samples,
@@ -717,12 +719,8 @@ compute_diff_scores <- function(
     dplyr::mutate(groupId = as.integer(groupId)) %>%
     dplyr::arrange(desc(score_diff))
 
-  sig_scores <- isotopic_incorporation_scores %>%
-    dplyr::filter(is_isotopic_incorporation) %>%
-    dplyr::select(-is_isotopic_incorporation)
-
   treatment_vs_control_w_header <- treatment_vs_control_combined %>%
-    dplyr::inner_join(sig_scores, by = c("groupId"), relationship = "many-to-many") %>%
+    dplyr::inner_join(sig_isotopic_incorporation_scores, by = c("groupId"), relationship = "many-to-many") %>%
     dplyr::rename(
       incorporation_subset = subset,
       score_t_late = labeled_score,

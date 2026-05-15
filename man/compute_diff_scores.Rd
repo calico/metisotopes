@@ -6,6 +6,7 @@
 \usage{
 compute_diff_scores(
   incorporation_subset,
+  sig_isotopic_incorporation_scores,
   t_early_control_samples,
   t_early_treatment_samples,
   t_late_control_samples,
@@ -16,6 +17,8 @@ compute_diff_scores(
 }
 \arguments{
 \item{incorporation_subset}{list of isotope matrices that should be assessed for differences.}
+
+\item{sig_isotopic_incorporation_scores}{tibble containing scores information, filtered tibble from \code{compute_isotopic_incorporation()}}
 
 \item{t_early_control_samples}{vector of sample names corresponding to \code{(t_early, control)} covariates.}
 
