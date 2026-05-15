@@ -1,5 +1,6 @@
 # metisotopes
 mass spectrometry utility functions and processing algorithms for analysis of stable isotope label metabolomics data. 
+![Pipeline](img/met_isotopes_pipeline.png)
 
 # Installation
 Execute the following command in an R console:
