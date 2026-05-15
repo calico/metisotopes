@@ -246,12 +246,15 @@ pipeline_diff_iso_emergent_abundance <- function(
   t_late_treatment_samples,
   sample_order,
   isotope_quant_measurement_type,
+  peakdetector_file = NULL,
   incorporation_score_threshold = 1.30103, # -log10(0.05),
   diff_score_threshold = 1.30103, # -log10(0.05),
-  condition_scoring_type = NULL, # "diff_scores", "linear_model", "no-rescoring", nothing
-  peakdetector_file = NULL,
   verbose = TRUE
 ) {
+
+  # need full path for output file
+  mzrolldb_file_path <- file.path(output_directory, output_file_name)
+
   # hook that allows for recomputation, or skip peakdetector step
   # (only execute rescoring)
   if (is.null(peakdetector_file)) {
@@ -271,15 +274,9 @@ pipeline_diff_iso_emergent_abundance <- function(
 
     # [4] rename output file to desired name
     default_mzrolldb_file <- file.path(output_directory, "peakdetector.mzrollDB")
-    output_file_path <- file.path(output_directory, output_file_name)
-    file.rename(default_mzrolldb_file, output_file_path)
+    file.rename(default_mzrolldb_file, mzrolldb_file_path)
   } else {
-    file.copy(peakdetector_file, output_file_path)
-  }
-
-  # No isotopic incorporation scoring nor time-emergent differential abundance scoring
-  if (condition_scoring_type == "no-rescoring") {
-    return(invisible(0))
+    file.copy(peakdetector_file, mzrolldb_file_path)
   }
 
   # [5] isotopic incorporation
@@ -293,24 +290,33 @@ pipeline_diff_iso_emergent_abundance <- function(
     sample_order
   )
 
-  # [6] differential isotopic incorporation
-  if (condition_scoring_type == "linear_model") {
-    # TODO: linear model scoring
-  } else if (condition_scoring_type == "diff_scores") {
-    pipeline_scores <- compute_diff_scores(
-      mzrolldb_file_path,
-      isotopic_incorporation_scores,
-      isotope_quant_measurement_type,
-      sample_order,
-      diff_score_threshold
+  # [6] differential isotopic incorporation via diff scores
+  diff_scores <- compute_diff_scores(
+    mzrolldb_file_path,
+    isotopic_incorporation_scores,
+    isotope_quant_measurement_type,
+    sample_order,
+    diff_score_threshold
+  )
+
+  # [7] Time-emergent differential abundance
+  lm_scores <- compute_time_emergent_diff_linear_model(
+
+  )
+
+  # [8] update mzrolldb file, labeling peak groups and updating groupRank column
+  # with new score values
+  label_isotopes_by_top_hits(
+    mzrolldb_file_path,
+    top_hits,
+    sig_scores
     )
 
-    # fall back to using isotopic incorporation only
-  } else {
-    pipeline_scores <- isotopic_incorporation_scores
-  }
+  # [9] return scoring results as output
+  scoring_results <- list(
+    "isotopic_incorporation_scores"= isotopic_incorporation_scores,
+    "diff_scores" = diff_scores,
+    "lm_scores"= lm_scores)
 
-  # [7] update mzrolldb file
-
-  # [8] return report with all results
+  return(scoring_results)
 }
