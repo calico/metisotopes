@@ -15,6 +15,7 @@ Imports:
   multcomp,
   mzkitcpp,
   tibble,
+  tictoc,
   tidyr
 Encoding: UTF-8
 LazyData: true
