@@ -665,10 +665,7 @@ compute_isotopic_incorporation <- function(
 #' computable. However, this function should probably be used in conjunction with the standard approach,
 #' which constructs a linear model containing all samples/information (see \code{compute_time_emergent_diff_linear_model()}).
 #'
-#' @param mzrolldb_file_path full path to mzrollDB file, which should already exist
-#' and contain peak groups with isotopic envelopes.
-#' @param isotope_quant_measurement_type Specific quant type used for evaluation.
-#' For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \code{peakIntensity}.
+#' @param incorporation_subset list of isotope matrices that should be assessed for differences.
 #' @param t_early_control_samples vector of sample names corresponding to \code{(t_early, control)} covariates.
 #' @param t_early_treatment_samples vector of sample names corresponding to \code{(t_early, treatment)} covariates.
 #' @param t_late_control_samples vector of sample names corresponding to \code{(t_late, control)} covariates.
@@ -683,9 +680,7 @@ compute_isotopic_incorporation <- function(
 #'
 #' @export
 compute_diff_scores <- function(
-  mzrolldb_file_path,
-  isotopic_incorporation_scores,
-  isotope_quant_measurement_type,
+  incorporation_subset,
   t_early_control_samples,
   t_early_treatment_samples,
   t_late_control_samples,
@@ -693,23 +688,6 @@ compute_diff_scores <- function(
   sample_order,
   score_diff_threshold = 1.30103 # -log10(0.05)
 ) {
-  sig_scores <- isotopic_incorporation_scores %>%
-    dplyr::filter(is_isotopic_incorporation) %>%
-    dplyr::select(-is_isotopic_incorporation)
-
-  incorporation_group_ids <- as.character(unique(sig_scores$groupId))
-
-  iso_matrices_conditional_df <- get_precomputed_iso_df(
-    iso_mzrolldb_file = mzrolldb_file_path,
-    isotope_quant_measurement_type = isotope_quant_measurement_type,
-    is_fractional_abundance = FALSE,
-    sample_order = sample_order
-  )
-
-  iso_matrices_conditional_df_list <- to_iso_matrices(iso_matrices_conditional_df)
-
-  incorporation_subset <- iso_matrices_conditional_df_list[incorporation_group_ids]
-
   # Treatment t_early vs Control t_early
   treatment_vs_control_t_early <- purrr::map(
     incorporation_subset,
@@ -753,10 +731,11 @@ compute_diff_scores <- function(
   return(diff_scores)
 }
 
+#' @param incorporation_subset list of isotope matrices that should be assessed for differences.
+#'
+#' @export
 compute_time_emergent_diff_linear_model <- function(
-  mzrolldb_file_path,
-  isotopic_incorporation_scores,
-  isotope_quant_measurement_type,
+  incorporation_subset,
   t_early_control_samples,
   t_early_treatment_samples,
   t_late_control_samples,
@@ -767,17 +746,6 @@ compute_time_emergent_diff_linear_model <- function(
   p_val_t_late_threshold = 0.05,
   is_filter_M0_normalize = TRUE
 ) {
-  iso_matrices_conditional_df <- metisotopes::get_precomputed_iso_df(
-    iso_mzrolldb_file = mzrolldb_file_path,
-    isotope_quant_measurement_type = isotope_quant_measurement_type,
-    is_fractional_abundance = FALSE,
-    sample_order = sample_order
-  )
-
-  iso_matrices_conditional_df_list <- metisotopes::to_iso_matrices(iso_matrices_conditional_df)
-
-  incorporation_subset <- iso_matrices_conditional_df_list[incorporation_group_ids]
-
   emergent_significance_no_M0_norm <- purrr::map(
     incorporation_subset,
     diff_iso_emergent_significance,

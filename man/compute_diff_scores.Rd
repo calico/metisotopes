@@ -5,9 +5,7 @@
 \title{Subset Diff Scores}
 \usage{
 compute_diff_scores(
-  mzrolldb_file_path,
-  isotopic_incorporation_scores,
-  isotope_quant_measurement_type,
+  incorporation_subset,
   t_early_control_samples,
   t_early_treatment_samples,
   t_late_control_samples,
@@ -17,11 +15,7 @@ compute_diff_scores(
 )
 }
 \arguments{
-\item{mzrolldb_file_path}{full path to mzrollDB file, which should already exist
-and contain peak groups with isotopic envelopes.}
-
-\item{isotope_quant_measurement_type}{Specific quant type used for evaluation.
-For example, \code{peakArea}, \code{peakAreaTop}, \code{smoothedPeakArea}, or \code{peakIntensity}.}
+\item{incorporation_subset}{list of isotope matrices that should be assessed for differences.}
 
 \item{t_early_control_samples}{vector of sample names corresponding to \code{(t_early, control)} covariates.}
 

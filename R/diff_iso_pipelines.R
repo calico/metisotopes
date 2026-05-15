@@ -342,11 +342,26 @@ pipeline_time_emergent_differential_abundance <- function(
     sample_order
   )
 
+  sig_scores <- isotopic_incorporation_scores %>%
+    dplyr::filter(is_isotopic_incorporation) %>%
+    dplyr::select(-is_isotopic_incorporation)
+
+  incorporation_group_ids <- as.character(unique(sig_scores$groupId))
+
+  iso_matrices_conditional_df <- get_precomputed_iso_df(
+    iso_mzrolldb_file = mzrolldb_file_path,
+    isotope_quant_measurement_type = isotope_quant_measurement_type,
+    is_fractional_abundance = FALSE,
+    sample_order = sample_order
+  )
+
+  iso_matrices_conditional_df_list <- to_iso_matrices(iso_matrices_conditional_df)
+
+  incorporation_subset <- iso_matrices_conditional_df_list[incorporation_group_ids]
+
   # [6] differential isotopic incorporation via diff scores
   diff_scores <- compute_diff_scores(
-    mzrolldb_file_path,
-    isotopic_incorporation_scores,
-    isotope_quant_measurement_type,
+    incorporation_subset,
     t_early_control_samples,
     t_early_treatment_samples,
     t_late_control_samples,
@@ -357,9 +372,7 @@ pipeline_time_emergent_differential_abundance <- function(
 
   # [7] Time-emergent differential abundance
   lm_scores <- compute_time_emergent_diff_linear_model(
-    mzrolldb_file_path,
-    isotopic_incorporation_scores,
-    isotope_quant_measurement_type,
+    incorporation_subset,
     t_early_control_samples,
     t_early_treatment_samples,
     t_late_control_samples,
@@ -374,6 +387,7 @@ pipeline_time_emergent_differential_abundance <- function(
   # [8] update mzrolldb file, labeling peak groups and updating groupRank column
   # with new score values
   top_hits <- lm_scores %>%
+    dplyr::filter(is_p_val_interaction & is_p_val_early_diff & is_p_val_late_diff) %>%
     dplyr::group_by(groupId, isotope) %>%
     dplyr::mutate(groupRank = max(emergentScore)) %>%
     dplyr::ungroup() %>%
