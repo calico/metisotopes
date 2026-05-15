@@ -717,6 +717,10 @@ compute_diff_scores <- function(
     dplyr::mutate(groupId = as.integer(groupId)) %>%
     dplyr::arrange(desc(score_diff))
 
+  sig_scores <- isotopic_incorporation_scores %>%
+    dplyr::filter(is_isotopic_incorporation) %>%
+    dplyr::select(-is_isotopic_incorporation)
+
   treatment_vs_control_w_header <- treatment_vs_control_combined %>%
     dplyr::inner_join(sig_scores, by = c("groupId"), relationship = "many-to-many") %>%
     dplyr::rename(
