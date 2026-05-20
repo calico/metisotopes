@@ -1,0 +1,25 @@
+name: Format and lint R code 
+
+on:
+  push:
+    paths-ignore:
+      - "*Rd"
+      - "*png"
+
+permissions:
+  contents: "read"
+  id-token: "write"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  call-r-lint:
+    uses: calico/calico-github-actions/.github/workflows/r-lint.yml@main
+    permissions:
+      contents: "write"
+      id-token: "write"
+    with:
+      auto-format-enabled: true
+    secrets: inherit

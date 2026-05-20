@@ -9,6 +9,7 @@ Description: Convenience functions for analyzing / processing isotopic envelopes
     is exposed to R via the Rcpp_isotopes.cpp file in mzkitcpp.
 License: file LICENSE
 Imports:
+  claman,
   dbplyr,
   dplyr,
   magrittr,

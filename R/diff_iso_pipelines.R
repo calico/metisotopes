@@ -59,12 +59,17 @@ pipeline_diff_iso_search <- function(
   }
 
   # [3] Create unscored mzrollDB file
-  tictoc::tic("Peakgroup detection, isotope extraction, and compound identification")
+  tictoc::tic(
+    "Peakgroup detection, isotope extraction, and compound identification"
+  )
   system(cmd, ignore.stdout = !verbose, ignore.stderr = TRUE)
   tictoc::toc()
 
   # [4] rename output file to desired name
-  unscored_mzrolldb_file <- file.path(output_directory, paste0(unscored_file_name, ".mzrollDB"))
+  unscored_mzrolldb_file <- file.path(
+    output_directory,
+    paste0(unscored_file_name, ".mzrollDB")
+  )
   system(glue::glue("mv {default_mzrolldb_file} {unscored_mzrolldb_file}"))
 
   ## Start Re-scoring Part
@@ -74,7 +79,11 @@ pipeline_diff_iso_search <- function(
   peakgroups_updated <- peakgroups %>% dplyr::mutate(searchTableName = "clamDB")
 
   samples <- PDB_sample_list(unscored_mzrolldb_file)
-  samples_updated <- diff_iso_color_samples(samples, unlabeled_samples_pattern, labeled_samples_pattern)
+  samples_updated <- diff_iso_color_samples(
+    samples,
+    unlabeled_samples_pattern,
+    labeled_samples_pattern
+  )
 
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname = unscored_mzrolldb_file)
   DBI::dbWriteTable(con, "peakgroups", peakgroups_updated, overwrite = TRUE)
@@ -98,7 +107,11 @@ pipeline_diff_iso_search <- function(
   tictoc::toc()
 
   # [7] Rename re-scored file
-  rescored_file_name <- paste0(gsub(".mzrollDB", "", basename(unscored_mzrolldb_file)), rescore_suffix, ".mzrollDB")
+  rescored_file_name <- paste0(
+    gsub(".mzrollDB", "", basename(unscored_mzrolldb_file)),
+    rescore_suffix,
+    ".mzrollDB"
+  )
   rescored_mzrolldb_file <- file.path(output_directory, rescored_file_name)
 
   # [8] Collect Results, return as table
@@ -121,7 +134,14 @@ pipeline_diff_iso_search <- function(
     dplyr::filter(label == "c") %>%
     dplyr::select(groupId, ms2Score, groupRank) %>%
     dplyr::inner_join(group_summaries, by = c("groupId")) %>%
-    dplyr::select(compoundName, adductName, groupMz, groupRt, ms2Score, groupRank)
+    dplyr::select(
+      compoundName,
+      adductName,
+      groupMz,
+      groupRt,
+      ms2Score,
+      groupRank
+    )
 
   return(groups_of_interest)
 }
@@ -195,12 +215,17 @@ pipeline_diff_iso_conditions_search <- function(
   }
 
   # [3] Create unscored mzrollDB file
-  tictoc::tic("Peakgroup detection, isotope extraction, and compound identification")
+  tictoc::tic(
+    "Peakgroup detection, isotope extraction, and compound identification"
+  )
   system(cmd, ignore.stdout = !verbose, ignore.stderr = TRUE)
   tictoc::toc()
 
   # [4] rename output file to desired name
-  unscored_mzrolldb_file <- file.path(output_directory, paste0(unscored_file_name, ".mzrollDB"))
+  unscored_mzrolldb_file <- file.path(
+    output_directory,
+    paste0(unscored_file_name, ".mzrollDB")
+  )
   system(glue::glue("mv {default_mzrolldb_file} {unscored_mzrolldb_file}"))
 
   ## Start re-scoring Part
@@ -210,7 +235,11 @@ pipeline_diff_iso_conditions_search <- function(
   peakgroups_updated <- peakgroups %>% dplyr::mutate(searchTableName = "clamDB")
 
   samples <- PDB_sample_list(unscored_mzrolldb_file)
-  samples_updated <- diff_iso_color_samples(samples, unlabeled_samples_pattern, labeled_samples_pattern)
+  samples_updated <- diff_iso_color_samples(
+    samples,
+    unlabeled_samples_pattern,
+    labeled_samples_pattern
+  )
 
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname = unscored_mzrolldb_file)
   DBI::dbWriteTable(con, "peakgroups", peakgroups_updated, overwrite = TRUE)
@@ -320,12 +349,17 @@ pipeline_time_emergent_differential_abundance <- function(
     )
 
     # [3] Create unscored mzrollDB file
-    tictoc::tic("Peakgroup detection, isotope extraction, and compound identification")
+    tictoc::tic(
+      "Peakgroup detection, isotope extraction, and compound identification"
+    )
     system(cmd, ignore.stdout = !verbose, ignore.stderr = TRUE)
     tictoc::toc()
 
     # [4] rename output file to desired name
-    default_mzrolldb_file <- file.path(output_directory, "peakdetector.mzrollDB")
+    default_mzrolldb_file <- file.path(
+      output_directory,
+      "peakdetector.mzrollDB"
+    )
     file.rename(default_mzrolldb_file, mzrolldb_file_path)
   } else {
     file.copy(peakdetector_file, mzrolldb_file_path)
@@ -346,7 +380,9 @@ pipeline_time_emergent_differential_abundance <- function(
     dplyr::filter(is_isotopic_incorporation) %>%
     dplyr::select(-is_isotopic_incorporation)
 
-  incorporation_group_ids <- as.character(unique(sig_isotopic_incorporation_scores$groupId))
+  incorporation_group_ids <- as.character(unique(
+    sig_isotopic_incorporation_scores$groupId
+  ))
 
   iso_matrices_conditional_df <- get_precomputed_iso_df(
     iso_mzrolldb_file = mzrolldb_file_path,
@@ -355,9 +391,13 @@ pipeline_time_emergent_differential_abundance <- function(
     sample_order = sample_order
   )
 
-  iso_matrices_conditional_df_list <- to_iso_matrices(iso_matrices_conditional_df)
+  iso_matrices_conditional_df_list <- to_iso_matrices(
+    iso_matrices_conditional_df
+  )
 
-  incorporation_subset <- iso_matrices_conditional_df_list[incorporation_group_ids]
+  incorporation_subset <- iso_matrices_conditional_df_list[
+    incorporation_group_ids
+  ]
 
   # [6] differential isotopic incorporation via diff scores
   diff_scores <- compute_diff_scores(
@@ -388,7 +428,9 @@ pipeline_time_emergent_differential_abundance <- function(
   # [8] update mzrolldb file, labeling peak groups and updating groupRank column
   # with new score values
   top_hits <- lm_scores %>%
-    dplyr::filter(is_p_val_interaction & is_p_val_early_diff & is_p_val_late_diff) %>%
+    dplyr::filter(
+      is_p_val_interaction & is_p_val_early_diff & is_p_val_late_diff
+    ) %>%
     dplyr::group_by(groupId, isotope) %>%
     dplyr::mutate(groupRank = max(emergentScore)) %>%
     dplyr::ungroup() %>%

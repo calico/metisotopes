@@ -29,25 +29,64 @@ PDB_peaks <- function(mzrolldb_file_path) {
 
   cols_to_cast <- c(
     # Identifiers and Integer Positions
-    "peakId", "groupId", "sampleId", "pos", "minpos", "maxpos",
-    "scan", "minscan", "maxscan", "width", "label", "fromBlankSample",
+    "peakId",
+    "groupId",
+    "sampleId",
+    "pos",
+    "minpos",
+    "maxpos",
+    "scan",
+    "minscan",
+    "maxscan",
+    "width",
+    "label",
+    "fromBlankSample",
 
     # Retention Time and m/z (Real/Numeric)
-    "rt", "rtmin", "rtmax", "mzmin", "mzmax", "peakMz", "medianMz", "baseMz",
+    "rt",
+    "rtmin",
+    "rtmax",
+    "mzmin",
+    "mzmax",
+    "peakMz",
+    "medianMz",
+    "baseMz",
 
     # Intensities and Areas
-    "peakArea", "peakAreaCorrected", "peakAreaTop", "peakAreaFractional",
-    "peakRank", "peakIntensity", "peakBaseLineLevel", "smoothedIntensity",
-    "smoothedPeakArea", "smoothedPeakAreaCorrected", "smoothedPeakAreaTop",
+    "peakArea",
+    "peakAreaCorrected",
+    "peakAreaTop",
+    "peakAreaFractional",
+    "peakRank",
+    "peakIntensity",
+    "peakBaseLineLevel",
+    "smoothedIntensity",
+    "smoothedPeakArea",
+    "smoothedPeakAreaCorrected",
+    "smoothedPeakAreaTop",
 
     # Quality and Fit Stats
-    "quality", "gaussFitSigma", "gaussFitR2", "noNoiseObs", "noNoiseFraction",
-    "symmetry", "signalBaselineRatio", "groupOverlap", "groupOverlapFrac",
-    "localMaxFlag", "smoothedSignalBaselineRatio",
+    "quality",
+    "gaussFitSigma",
+    "gaussFitR2",
+    "noNoiseObs",
+    "noNoiseFraction",
+    "symmetry",
+    "signalBaselineRatio",
+    "groupOverlap",
+    "groupOverlapFrac",
+    "localMaxFlag",
+    "smoothedSignalBaselineRatio",
 
     # FWHM Specific Columns
-    "minPosFWHM", "maxPosFWHM", "minScanFWHM", "maxScanFWHM",
-    "rtminFWHM", "rtmaxFWHM", "peakAreaFWHM", "smoothedPeakAreaFWHM"
+    "minPosFWHM",
+    "maxPosFWHM",
+    "minScanFWHM",
+    "maxScanFWHM",
+    "rtminFWHM",
+    "rtmaxFWHM",
+    "peakAreaFWHM",
+    "smoothedPeakAreaFWHM"
   )
 
   peakgroups <- dplyr::tbl(con, "peaks") %>%
@@ -116,12 +155,17 @@ label_isotopes_by_top_hits <- function(
     dplyr::mutate(groupRank = max(groupRank)) %>%
     dplyr::ungroup() %>%
     dplyr::distinct() %>%
-    dplyr::mutate(label_add = ifelse(groupId %in% sig_matches$groupId, "ca", "c"))
+    dplyr::mutate(
+      label_add = ifelse(groupId %in% sig_matches$groupId, "ca", "c")
+    )
 
   # [1] Significant isotopes
   sig_isotopes <- all_groups %>%
     dplyr::select(-groupRank) %>%
-    dplyr::inner_join(sig_matches, by = c("parentGroupId" = "groupId", "tagString" = "isotope")) %>%
+    dplyr::inner_join(
+      sig_matches,
+      by = c("parentGroupId" = "groupId", "tagString" = "isotope")
+    ) %>%
     dplyr::mutate(label = paste0(label, label_add)) %>%
     dplyr::select(dplyr::all_of(colnames(all_groups)))
 
