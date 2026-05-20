@@ -3,7 +3,8 @@ name: Format and lint R code
 on:
   push:
     paths-ignore:
-      - "*Dockerfile"
+      - "*Rd"
+      - "*png"
 
 permissions:
   contents: "read"
