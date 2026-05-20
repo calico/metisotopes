@@ -445,7 +445,7 @@ diff_iso_conditions_rescore_and_label <- function(
   # Iterate through each binary factor covariate, and assess the dataset
   # using Cartesian product approach.
   # [6] Define new sets, based on every possible covariate
-  for (i in 1:nrow(experimental_design)) {
+  for (i in seq_len(nrow(experimental_design))) {
     # grab conditions set for this round of t-tests
     condition_1 <- experimental_design[[i, "condition_1"]]
     condition_2 <- experimental_design[[i, "condition_2"]]

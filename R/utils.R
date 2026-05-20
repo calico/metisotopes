@@ -180,7 +180,7 @@ to_iso_matrices <- function(iso_matrices_df) {
     length = length(iso_matrices_nested$groupId)
   )
 
-  for (i in 1:length(iso_matrices_nested$data)) {
+  for (i in seq_along(iso_matrices_nested$data)) {
     original_tibble <- iso_matrices_nested$data[[i]]
 
     tibble_reshaped <- original_tibble %>%
@@ -252,7 +252,7 @@ diff_iso_color_samples <- function(
   labeled_order <- rep(-1, 100)
   other_order <- numeric(0)
 
-  for (i in 1:nrow(samples_tbl_recolored)) {
+  for (i in seq_len(nrow(samples_tbl_recolored))) {
     sample_id <- samples_tbl_recolored$sampleId[i]
     ith_name <- samples_tbl_recolored$name[i]
 

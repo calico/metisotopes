@@ -53,14 +53,14 @@ peakdetector_add_params <- function(args, params) {
   is_double_dash <- grepl("^--", param_names)
 
   # add regular arguments first
-  for (i in 1:length(params)) {
+  for (i in seq_along(params)) {
     if (!is_double_dash[i]) {
       args <- peakdetector_add_CL_argument(args, param_names[i], params[[i]])
     }
   }
 
   # add double dash argument list
-  for (i in 1:length(params)) {
+  for (i in seq_along(params)) {
     if (is_double_dash[i]) {
       args <- peakdetector_add_CL_argument(args, param_names[i], params[[i]])
     }

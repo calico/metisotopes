@@ -138,7 +138,7 @@ diff_iso_all_isotopes_WelchTTest <- function(
     score = rep(0, length(isotopes))
   )
 
-  for (i in 1:length(isotopes)) {
+  for (i in seq_along(isotopes)) {
     isotope <- isotopes[i]
     condition_1_measurements <- condition_1_envelopes[, isotope]
     condition_2_measurements <- condition_2_envelopes[, isotope]
@@ -314,7 +314,7 @@ diff_iso_emergent_significance <- function(
     p_val_late_diff = rep(NA, N)
   )
 
-  for (i in 1:nrow(results)) {
+  for (i in seq_len(nrow(results))) {
     isotope_name <- isotope_names[i]
 
     design_matrix <- to_emergent_isotope_design_matrix(
