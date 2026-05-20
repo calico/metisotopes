@@ -53,19 +53,35 @@ diff_iso_rescore <- function(
   )
 
   if (verbose) {
-    cat(paste0("mzkitcpp::ISO_isotope_matrices() returned ", nrow(iso_matrices), " isotopic measurements.\n"))
+    cat(paste0(
+      "mzkitcpp::ISO_isotope_matrices() returned ",
+      nrow(iso_matrices),
+      " isotopic measurements.\n"
+    ))
   }
 
   # [3] Reshape outputs to list of isotopic matrices
   iso_matrices_reshaped <- to_iso_matrices(iso_matrices)
 
   if (verbose) {
-    cat(paste0("to_iso_matrices() returned ", length(iso_matrices_reshaped), " diff iso comparable isotopic matrices.\n"))
+    cat(paste0(
+      "to_iso_matrices() returned ",
+      length(iso_matrices_reshaped),
+      " diff iso comparable isotopic matrices.\n"
+    ))
   }
 
   # [4] diff iso re-scoring
-  scores <- purrr::map(iso_matrices_reshaped, rescoring_function, unlabeled_samples, labeled_samples)
-  scores_tibble <- tibble::tibble(groupId = as.integer(names(scores)), groupRank = unlist(scores)) %>%
+  scores <- purrr::map(
+    iso_matrices_reshaped,
+    rescoring_function,
+    unlabeled_samples,
+    labeled_samples
+  )
+  scores_tibble <- tibble::tibble(
+    groupId = as.integer(names(scores)),
+    groupRank = unlist(scores)
+  ) %>%
     dplyr::filter(groupRank > 0)
 
   if (verbose) {
@@ -86,7 +102,9 @@ diff_iso_rescore <- function(
   DBI::dbDisconnect(conn)
 
   if (verbose) {
-    cat(paste0("Successfuly completed rescoring and saved updated peak groups to mzrollDB file!\n"))
+    cat(paste0(
+      "Successfuly completed rescoring and saved updated peak groups to mzrollDB file!\n"
+    ))
   }
 
   # [6] compute comparison of the original to new scoring approach.
@@ -155,22 +173,40 @@ diff_iso_rescore_and_label <- function(
 ) {
   rescored_mzrolldb_file <- file.path(
     dirname(original_mzrolldb_file),
-    paste0(gsub(".mzrollDB", "", basename(original_mzrolldb_file)), rescore_suffix, ".mzrollDB")
+    paste0(
+      gsub(".mzrollDB", "", basename(original_mzrolldb_file)),
+      rescore_suffix,
+      ".mzrollDB"
+    )
   )
 
   # start by copying original file into rescored file path
   cmd <- glue::glue("cp {original_mzrolldb_file} {rescored_mzrolldb_file}")
-  if (verbose) cat(paste0("Rescoring will be executed in copied mzrollDB file:\n`", cmd, "`\n"))
+  if (verbose) {
+    cat(paste0(
+      "Rescoring will be executed in copied mzrollDB file:\n`",
+      cmd,
+      "`\n"
+    ))
+  }
   system(cmd)
 
   diff_iso_params <- list()
   diff_iso_params[["diffIsoScoringFractionOfSampleTotal"]] <- TRUE
-  diff_iso_params[["diffIsoScoringCorrectNatAbundance"]] <- is_correct_natural_abundance
+  diff_iso_params[[
+    "diffIsoScoringCorrectNatAbundance"
+  ]] <- is_correct_natural_abundance
 
   all_samples_files <- list.files(mzML_dir, pattern = "*.mzX?ML")
 
-  unlabeled_samples <- all_samples_files[grepl(unlabeled_samples_pattern, all_samples_files)]
-  labeled_samples <- all_samples_files[grepl(labeled_samples_pattern, all_samples_files)]
+  unlabeled_samples <- all_samples_files[grepl(
+    unlabeled_samples_pattern,
+    all_samples_files
+  )]
+  labeled_samples <- all_samples_files[grepl(
+    labeled_samples_pattern,
+    all_samples_files
+  )]
 
   group_comparison <- metisotopes::diff_iso_rescore(
     mzrolldb_file = rescored_mzrolldb_file,
@@ -186,11 +222,15 @@ diff_iso_rescore_and_label <- function(
 
   sig_hits_above_thresh <- group_comparison %>%
     dplyr::inner_join(rescored_groups, by = c("groupId")) %>%
-    dplyr::filter(ms2Score >= ms2_score_threshold & rescoredRank >= rank_thresh) %>%
+    dplyr::filter(
+      ms2Score >= ms2_score_threshold & rescoredRank >= rank_thresh
+    ) %>%
     dplyr::select(groupId)
 
   labeled_groups <- rescored_groups %>%
-    dplyr::mutate(label = ifelse(groupId %in% sig_hits_above_thresh$groupId, "c", label))
+    dplyr::mutate(
+      label = ifelse(groupId %in% sig_hits_above_thresh$groupId, "c", label)
+    )
 
   conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = rescored_mzrolldb_file)
 
@@ -305,12 +345,20 @@ diff_iso_conditions_rescore_and_label <- function(
     dplyr::distinct()
 
   all_samples_files <- list.files(mzML_dir, pattern = "*.mzML")
-  unlabeled_samples <- all_samples_files[grepl(unlabeled_samples_pattern, all_samples_files)]
-  labeled_samples <- all_samples_files[grepl(labeled_samples_pattern, all_samples_files)]
+  unlabeled_samples <- all_samples_files[grepl(
+    unlabeled_samples_pattern,
+    all_samples_files
+  )]
+  labeled_samples <- all_samples_files[grepl(
+    labeled_samples_pattern,
+    all_samples_files
+  )]
 
   incorporation_diff_iso_params <- list()
   incorporation_diff_iso_params[["diffIsoScoringFractionOfSampleTotal"]] <- TRUE
-  incorporation_diff_iso_params[["diffIsoScoringCorrectNatAbundance"]] <- is_correct_natural_abundance
+  incorporation_diff_iso_params[[
+    "diffIsoScoringCorrectNatAbundance"
+  ]] <- is_correct_natural_abundance
 
   iso_matrices <- mzkitcpp::ISO_isotope_matrices(
     mzML_dir,
@@ -325,11 +373,25 @@ diff_iso_conditions_rescore_and_label <- function(
 
   iso_matrices_reshaped <- to_iso_matrices(iso_matrices)
 
-  incorporation_scores <- purrr::map(iso_matrices_reshaped, incorporation_rescoring_function, unlabeled_samples, labeled_samples)
+  incorporation_scores <- purrr::map(
+    iso_matrices_reshaped,
+    incorporation_rescoring_function,
+    unlabeled_samples,
+    labeled_samples
+  )
 
-  incorporation_scores_tibble <- tibble::tibble(groupId = as.integer(names(incorporation_scores)), groupRank = unlist(incorporation_scores)) %>%
+  incorporation_scores_tibble <- tibble::tibble(
+    groupId = as.integer(names(incorporation_scores)),
+    groupRank = unlist(incorporation_scores)
+  ) %>%
     dplyr::arrange(desc(groupRank)) %>%
-    dplyr::mutate(incorporation_label = ifelse(groupRank >= incorporation_score_threshold, "c", ""))
+    dplyr::mutate(
+      incorporation_label = ifelse(
+        groupRank >= incorporation_score_threshold,
+        "c",
+        ""
+      )
+    )
 
   incorporation_scores_filtered <- incorporation_scores_tibble %>%
     dplyr::filter(groupRank >= incorporation_score_threshold)
@@ -341,13 +403,20 @@ diff_iso_conditions_rescore_and_label <- function(
   # [2] Condition Rescoring/Evaluation
 
   sig_incorporation_groups <- groups %>%
-    dplyr::filter(groupId %in% incorporation_scores_w_group$groupId | parentGroupId %in% incorporation_scores_w_group$groupId)
+    dplyr::filter(
+      groupId %in%
+        incorporation_scores_w_group$groupId |
+        parentGroupId %in% incorporation_scores_w_group$groupId
+    )
 
-  sig_incorporation_peaks <- peaks %>% dplyr::filter(groupId %in% sig_incorporation_groups$groupId)
+  sig_incorporation_peaks <- peaks %>%
+    dplyr::filter(groupId %in% sig_incorporation_groups$groupId)
 
   sig_diff_iso_params <- list()
   sig_diff_iso_params[["diffIsoScoringFractionOfSampleTotal"]] <- FALSE
-  sig_diff_iso_params[["diffIsoScoringCorrectNatAbundance"]] <- is_correct_natural_abundance
+  sig_diff_iso_params[[
+    "diffIsoScoringCorrectNatAbundance"
+  ]] <- is_correct_natural_abundance
 
   sig_iso_matrices <- mzkitcpp::ISO_isotope_matrices(
     mzML_dir,
@@ -363,9 +432,14 @@ diff_iso_conditions_rescore_and_label <- function(
   sig_incorporation_iso_matrices_labeled <- sig_iso_matrices %>%
     dplyr::filter(sample %in% labeled_samples)
 
-  sig_incorporation_iso_matrices_reshaped <- to_iso_matrices(sig_incorporation_iso_matrices_labeled)
+  sig_incorporation_iso_matrices_reshaped <- to_iso_matrices(
+    sig_incorporation_iso_matrices_labeled
+  )
 
-  conditions_comparisons <- vector(mode = "list", length = nrow(experimental_design))
+  conditions_comparisons <- vector(
+    mode = "list",
+    length = nrow(experimental_design)
+  )
   names(conditions_comparisons) <- experimental_design$name
 
   # Iterate through each binary factor covariate, and assess the dataset
@@ -389,7 +463,10 @@ diff_iso_conditions_rescore_and_label <- function(
       condition_2_samples
     )
 
-    condition_i_scores_w_names <- dplyr::bind_rows(condition_i_scores, .id = "groupId") %>%
+    condition_i_scores_w_names <- dplyr::bind_rows(
+      condition_i_scores,
+      .id = "groupId"
+    ) %>%
       dplyr::filter(score >= condition_score_threshold) %>%
       dplyr::mutate(comparison = condition_name, condition_label = label)
 
@@ -397,7 +474,10 @@ diff_iso_conditions_rescore_and_label <- function(
   }
 
   # Flatten conditions comparisons to single table
-  conditions_comparisons_flattened <- purrr::reduce(conditions_comparisons, rbind) %>%
+  conditions_comparisons_flattened <- purrr::reduce(
+    conditions_comparisons,
+    rbind
+  ) %>%
     dplyr::mutate(groupId = as.integer(groupId))
 
   # Add back group summaries
@@ -408,11 +488,17 @@ diff_iso_conditions_rescore_and_label <- function(
   # [3] Create Modified mzrollDB (with labels/rescored values)
 
   child_group_label_updates <- conditions_w_group_summaries %>%
-    dplyr::inner_join(parent_to_group, by = c("groupId" = "parentGroupId", "isotope")) %>%
+    dplyr::inner_join(
+      parent_to_group,
+      by = c("groupId" = "parentGroupId", "isotope")
+    ) %>%
     dplyr::select(groupId, childGroupId, condition_label)
 
   child_group_reshaped <- tibble::tibble(
-    groupId = c(child_group_label_updates$groupId, child_group_label_updates$childGroupId),
+    groupId = c(
+      child_group_label_updates$groupId,
+      child_group_label_updates$childGroupId
+    ),
     condition_label = rep(child_group_label_updates$condition_label, 2)
   ) %>%
     dplyr::distinct() %>%
@@ -425,13 +511,19 @@ diff_iso_conditions_rescore_and_label <- function(
   combined_peakgroup_updates <- incorporation_scores_tibble %>%
     dplyr::select(groupId, groupRank, incorporation_label) %>%
     dplyr::full_join(child_group_reshaped, by = c("groupId")) %>%
-    dplyr::mutate(label = dplyr::case_when(
-      !is.na(incorporation_label) & !is.na(condition_label) ~ paste0(incorporation_label, condition_label),
-      !is.na(incorporation_label) & is.na(condition_label) ~ incorporation_label,
-      is.na(incorporation_label) & !is.na(condition_label) ~ condition_label,
-      is.na(incorporation_label) & is.na(condition_label) ~ "",
-      TRUE ~ ""
-    )) %>%
+    dplyr::mutate(
+      label = dplyr::case_when(
+        !is.na(incorporation_label) & !is.na(condition_label) ~ paste0(
+          incorporation_label,
+          condition_label
+        ),
+        !is.na(incorporation_label) &
+          is.na(condition_label) ~ incorporation_label,
+        is.na(incorporation_label) & !is.na(condition_label) ~ condition_label,
+        is.na(incorporation_label) & is.na(condition_label) ~ "",
+        TRUE ~ ""
+      )
+    ) %>%
     dplyr::mutate(groupRank = ifelse(!is.na(groupRank), groupRank, 0)) %>%
     dplyr::select(groupId, groupRank, label)
 
@@ -441,13 +533,20 @@ diff_iso_conditions_rescore_and_label <- function(
 
   rescored_mzrolldb_file <- file.path(
     dirname(mzrolldb_file),
-    paste0(gsub(".mzrollDB", "", basename(mzrolldb_file)), rescore_suffix, ".mzrollDB")
+    paste0(
+      gsub(".mzrollDB", "", basename(mzrolldb_file)),
+      rescore_suffix,
+      ".mzrollDB"
+    )
   )
 
   cmd <- glue::glue("cp {mzrolldb_file} {rescored_mzrolldb_file}")
   system(cmd)
   if (verbose) {
-    cat(paste0("Successfully created rescored mzrolldb file: ", rescored_mzrolldb_file))
+    cat(paste0(
+      "Successfully created rescored mzrolldb file: ",
+      rescored_mzrolldb_file
+    ))
   }
 
   conn <- DBI::dbConnect(RSQLite::SQLite(), dbname = rescored_mzrolldb_file)

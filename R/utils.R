@@ -34,7 +34,11 @@ get_precomputed_iso_df <- function(
   samples <- PDB_sample_list(iso_mzrolldb_file)
 
   peaks_short <- peaks %>%
-    dplyr::select(groupId, sampleId, !!rlang::sym(isotope_quant_measurement_type))
+    dplyr::select(
+      groupId,
+      sampleId,
+      !!rlang::sym(isotope_quant_measurement_type)
+    )
 
   group_parents <- groups %>%
     dplyr::filter(parentGroupId == 0) %>%
@@ -85,7 +89,10 @@ get_precomputed_iso_df <- function(
 
   if (!is.null(sample_order)) {
     precomputed_iso_df <- precomputed_iso_df %>%
-      dplyr::arrange(groupId, sample = forcats::fct_relevel(sample, sample_order)) %>%
+      dplyr::arrange(
+        groupId,
+        sample = forcats::fct_relevel(sample, sample_order)
+      ) %>%
       dplyr::mutate(sample = as.character(sample))
   }
 
@@ -95,8 +102,22 @@ get_precomputed_iso_df <- function(
 
   # add header information
   precomputed_iso_df <- precomputed_iso_df %>%
-    dplyr::inner_join(groups_header, by = c("groupId"), relationship = "many-to-many") %>%
-    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName, ms2Score, sample, isotope, measurement)
+    dplyr::inner_join(
+      groups_header,
+      by = c("groupId"),
+      relationship = "many-to-many"
+    ) %>%
+    dplyr::select(
+      groupId,
+      groupMz,
+      groupRt,
+      compoundName,
+      adductName,
+      ms2Score,
+      sample,
+      isotope,
+      measurement
+    )
 
   return(precomputed_iso_df)
 }
@@ -154,13 +175,19 @@ to_iso_matrices <- function(iso_matrices_df) {
     dplyr::group_by(groupId) %>%
     tidyr::nest()
 
-  iso_matrices_reshaped <- vector(mode = "list", length = length(iso_matrices_nested$groupId))
+  iso_matrices_reshaped <- vector(
+    mode = "list",
+    length = length(iso_matrices_nested$groupId)
+  )
 
   for (i in 1:length(iso_matrices_nested$data)) {
     original_tibble <- iso_matrices_nested$data[[i]]
 
     tibble_reshaped <- original_tibble %>%
-      tidyr::pivot_wider(names_from = c("isotope"), values_from = c("measurement"))
+      tidyr::pivot_wider(
+        names_from = c("isotope"),
+        values_from = c("measurement")
+      )
 
     iso_matrices_reshaped[[i]] <- tibble_reshaped
   }
@@ -229,10 +256,15 @@ diff_iso_color_samples <- function(
     sample_id <- samples_tbl_recolored$sampleId[i]
     ith_name <- samples_tbl_recolored$name[i]
 
-    replicate_num <- as.numeric(stringr::str_extract(ith_name, "\\d+(?=\\.mzML$)"))
+    replicate_num <- as.numeric(stringr::str_extract(
+      ith_name,
+      "\\d+(?=\\.mzML$)"
+    ))
 
     # Sample names are not always formatted this way
-    if (is.na(replicate_num)) next
+    if (is.na(replicate_num)) {
+      next
+    }
 
     if (grepl(unlabeled_samples_pattern, ith_name)) {
       unlabeled_order[replicate_num] <- sample_id
@@ -250,7 +282,9 @@ diff_iso_color_samples <- function(
   updated_order <- c(unlabeled_order, labeled_order, other_order)
 
   if (length(updated_order) == nrow(samples_tbl_recolored)) {
-    samples_tbl_recolored <- samples_tbl_recolored[match(updated_order, samples_tbl_recolored$sampleId), ]
+    samples_tbl_recolored <- samples_tbl_recolored[
+      match(updated_order, samples_tbl_recolored$sampleId),
+    ]
     samples_tbl_recolored <- samples_tbl_recolored %>%
       dplyr::mutate(sampleOrder = dplyr::row_number())
   }
@@ -293,7 +327,11 @@ diff_iso_color_samples <- function(
 #'  And, a design list which tracks the variables in each table.
 #'
 #' @export
-import_isotope_mzroll <- function(mzroll_db_path, method_tag, quant_type = "peakAreaTop") {
+import_isotope_mzroll <- function(
+  mzroll_db_path,
+  method_tag,
+  quant_type = "peakAreaTop"
+) {
   iso_df <- get_precomputed_iso_df(mzroll_db_path, quant_type)
   iso_df_requantified <- requantify_to_envelope_sum(iso_df)
 
@@ -309,14 +347,22 @@ import_isotope_mzroll <- function(mzroll_db_path, method_tag, quant_type = "peak
     dplyr::select(sampleId, peakId, groupId, !!rlang::sym(quant_type)) %>%
     dplyr::inner_join(sample_id_to_name, by = c("sampleId")) %>%
     dplyr::select(-sampleId) %>%
-    dplyr::inner_join(iso_df_requantified, by = c("name" = "sample", "groupId")) %>%
+    dplyr::inner_join(
+      iso_df_requantified,
+      by = c("name" = "sample", "groupId")
+    ) %>%
     dplyr::select(peakId, envelopeSum) %>%
     dplyr::rename(!!rlang::sym(quant_type) := envelopeSum) %>%
     dplyr::select(peakId, !!rlang::sym(quant_type))
 
-  unmodified_quant_vals <- peaks %>% dplyr::filter(!(peakId %in% updated_quant_vals$peakId))
+  unmodified_quant_vals <- peaks %>%
+    dplyr::filter(!(peakId %in% updated_quant_vals$peakId))
   modified_quant_vals <- peaks %>%
-    dplyr::inner_join(updated_quant_vals, by = c("peakId"), suffix = c(".old", ".new")) %>%
+    dplyr::inner_join(
+      updated_quant_vals,
+      by = c("peakId"),
+      suffix = c(".old", ".new")
+    ) %>%
     dplyr::rename(!!rlang::sym(quant_type) := paste0(quant_type, ".new")) %>%
     dplyr::select(dplyr::all_of(colnames(peaks)))
 
@@ -333,7 +379,9 @@ import_isotope_mzroll <- function(mzroll_db_path, method_tag, quant_type = "peak
   # Remove all bookmarked peak groups if there are multiple entries
   # with the same (compoundName, adductName) name.
   bookmarked_peak_groups <- peakgroups %>%
-    dplyr::filter(searchTableName == "Bookmarks" & parentGroupId == 0 & !is.na(compoundName)) %>%
+    dplyr::filter(
+      searchTableName == "Bookmarks" & parentGroupId == 0 & !is.na(compoundName)
+    ) %>%
     dplyr::group_by(compoundName, adductName) %>%
     dplyr::mutate(n = dplyr::n()) %>%
     dplyr::ungroup() %>%
@@ -344,7 +392,9 @@ import_isotope_mzroll <- function(mzroll_db_path, method_tag, quant_type = "peak
   # Remove all non-bookmarked peak groups if there are multiple entries
   # with the same (compoundName, adductName) name.
   identified_peak_groups <- peakgroups %>%
-    dplyr::filter(searchTableName != "Bookmarks" & parentGroupId == 0 & !is.na(compoundName)) %>%
+    dplyr::filter(
+      searchTableName != "Bookmarks" & parentGroupId == 0 & !is.na(compoundName)
+    ) %>%
     dplyr::group_by(compoundName, adductName) %>%
     dplyr::mutate(n = dplyr::n()) %>%
     dplyr::ungroup() %>%
@@ -378,11 +428,13 @@ import_isotope_mzroll <- function(mzroll_db_path, method_tag, quant_type = "peak
   clamanized_peakgroups <- updated_peakgroups %>%
     dplyr::inner_join(mz_rt_coords, by = c("groupId")) %>%
     dplyr::select(-compoundId) %>%
-    dplyr::mutate(compoundName = ifelse(
-      is.na(displayName),
-      compoundName,
-      displayName
-    ))
+    dplyr::mutate(
+      compoundName = ifelse(
+        is.na(displayName),
+        compoundName,
+        displayName
+      )
+    )
 
   # validation test
   clamanized_counts <- clamanized_peakgroups %>%
@@ -422,10 +474,12 @@ import_isotope_mzroll <- function(mzroll_db_path, method_tag, quant_type = "peak
   clamanized_peakgroups <- clamanized_peakgroups %>%
     dplyr::select(!!!rlang::syms(detected_peakgroup_reduced_vars)) %>%
     dplyr::group_by(compoundName) %>%
-    dplyr::mutate(peak_label = dplyr::case_when(
-      dplyr::n() == 1 ~ compoundName,
-      TRUE ~ paste0(compoundName, " (", 1:dplyr::n(), ")")
-    )) %>%
+    dplyr::mutate(
+      peak_label = dplyr::case_when(
+        dplyr::n() == 1 ~ compoundName,
+        TRUE ~ paste0(compoundName, " (", 1:dplyr::n(), ")")
+      )
+    ) %>%
     dplyr::ungroup() %>%
     dplyr::mutate(method_tag = method_tag) %>%
     dplyr::arrange(groupId)
@@ -511,7 +565,8 @@ to_M0_normalized_isotope_matrix <- function(
   cols_to_norm <- cols_to_norm[cols_to_norm != "sample"]
 
   for (col_to_norm in cols_to_norm) {
-    isotope_matrix_norm[, col_to_norm] <- isotope_matrix[, col_to_norm] / norm_col
+    isotope_matrix_norm[, col_to_norm] <- isotope_matrix[, col_to_norm] /
+      norm_col
   }
 
   return(isotope_matrix_norm)
@@ -545,10 +600,28 @@ to_emergent_isotope_design_matrix <- function(
   # adjust data frame appropriately
   design_matrix <- isotope_matrix %>%
     # remove any samples that are not covered by the quant matrix
-    dplyr::filter(sample %in% t_early_control_samples | sample %in% t_late_control_samples | sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples) %>%
+    dplyr::filter(
+      sample %in%
+        t_early_control_samples |
+        sample %in% t_late_control_samples |
+        sample %in% t_early_treatment_samples |
+        sample %in% t_late_treatment_samples
+    ) %>%
     # add logic colums
-    dplyr::mutate(Treatment = as.integer(sample %in% t_early_treatment_samples | sample %in% t_late_treatment_samples)) %>%
-    dplyr::mutate(Time = as.integer(sample %in% t_late_control_samples | sample %in% t_late_treatment_samples)) %>%
+    dplyr::mutate(
+      Treatment = as.integer(
+        sample %in%
+          t_early_treatment_samples |
+          sample %in% t_late_treatment_samples
+      )
+    ) %>%
+    dplyr::mutate(
+      Time = as.integer(
+        sample %in%
+          t_late_control_samples |
+          sample %in% t_late_treatment_samples
+      )
+    ) %>%
     # rename and transform quant data
     dplyr::rename(Measurement := !!rlang::sym(isotope_name)) %>%
     dplyr::mutate(Measurement = log2(Measurement)) %>%
@@ -605,7 +678,14 @@ compute_isotopic_incorporation <- function(
   )
 
   iso_matrices_df_header <- iso_matrices_df %>%
-    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName, ms2Score) %>%
+    dplyr::select(
+      groupId,
+      groupMz,
+      groupRt,
+      compoundName,
+      adductName,
+      ms2Score
+    ) %>%
     dplyr::distinct()
 
   iso_matrices_list <- to_iso_matrices(iso_matrices_df)
@@ -641,10 +721,24 @@ compute_isotopic_incorporation <- function(
     dplyr::inner_join(iso_matrices_df_header, by = c("groupId"))
 
   # Agglomerated incorporation score list - significant in either case
-  isotopic_incorporation_scores <- rbind(control_scores_tibble, treatment_scores_tibble) %>%
+  isotopic_incorporation_scores <- rbind(
+    control_scores_tibble,
+    treatment_scores_tibble
+  ) %>%
     dplyr::arrange(desc(groupRank)) %>%
-    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName, ms2Score, groupRank, subset) %>%
-    dplyr::mutate(is_isotopic_incorporation = groupRank >= incorporation_score_threshold)
+    dplyr::select(
+      groupId,
+      groupMz,
+      groupRt,
+      compoundName,
+      adductName,
+      ms2Score,
+      groupRank,
+      subset
+    ) %>%
+    dplyr::mutate(
+      is_isotopic_incorporation = groupRank >= incorporation_score_threshold
+    )
 
   return(isotopic_incorporation_scores)
 }
@@ -697,7 +791,10 @@ compute_diff_scores <- function(
     t_early_control_samples,
     t_early_treatment_samples
   )
-  treatment_vs_control_t_early_tibble <- dplyr::bind_rows(treatment_vs_control_t_early, .id = "groupId") %>%
+  treatment_vs_control_t_early_tibble <- dplyr::bind_rows(
+    treatment_vs_control_t_early,
+    .id = "groupId"
+  ) %>%
     dplyr::rename(unlabeled_score = score)
 
   # Treatment t_late vs Control t_late
@@ -708,11 +805,15 @@ compute_diff_scores <- function(
     t_late_treatment_samples
   )
 
-  treatment_vs_control_t_late_tibble <- dplyr::bind_rows(treatment_vs_control_t_late, .id = "groupId") %>%
+  treatment_vs_control_t_late_tibble <- dplyr::bind_rows(
+    treatment_vs_control_t_late,
+    .id = "groupId"
+  ) %>%
     dplyr::rename(labeled_score = score)
 
   treatment_vs_control_combined <- dplyr::full_join(
-    treatment_vs_control_t_early_tibble, treatment_vs_control_t_late_tibble,
+    treatment_vs_control_t_early_tibble,
+    treatment_vs_control_t_late_tibble,
     by = c("groupId", "isotope")
   ) %>%
     dplyr::mutate(score_diff = abs(unlabeled_score - labeled_score)) %>%
@@ -720,7 +821,11 @@ compute_diff_scores <- function(
     dplyr::arrange(desc(score_diff))
 
   treatment_vs_control_w_header <- treatment_vs_control_combined %>%
-    dplyr::inner_join(sig_isotopic_incorporation_scores, by = c("groupId"), relationship = "many-to-many") %>%
+    dplyr::inner_join(
+      sig_isotopic_incorporation_scores,
+      by = c("groupId"),
+      relationship = "many-to-many"
+    ) %>%
     dplyr::rename(
       incorporation_subset = subset,
       score_t_late = labeled_score,
@@ -758,7 +863,10 @@ compute_time_emergent_diff_linear_model <- function(
     t_late_treatment_samples
   )
 
-  emergent_significance_no_M0_norm_tibble <- dplyr::bind_rows(emergent_significance_no_M0_norm, .id = "groupId") %>%
+  emergent_significance_no_M0_norm_tibble <- dplyr::bind_rows(
+    emergent_significance_no_M0_norm,
+    .id = "groupId"
+  ) %>%
     dplyr::mutate(is_M0_normalize = FALSE)
 
   emergent_significance_M0_norm <- purrr::map(
@@ -771,24 +879,42 @@ compute_time_emergent_diff_linear_model <- function(
     t_late_treatment_samples
   )
 
-  emergent_significance_M0_norm_tibble <- dplyr::bind_rows(emergent_significance_M0_norm, .id = "groupId") %>%
+  emergent_significance_M0_norm_tibble <- dplyr::bind_rows(
+    emergent_significance_M0_norm,
+    .id = "groupId"
+  ) %>%
     dplyr::mutate(is_M0_normalize = TRUE)
 
-  combined_emergent_significance <- rbind(emergent_significance_no_M0_norm_tibble, emergent_significance_M0_norm_tibble) %>%
+  combined_emergent_significance <- rbind(
+    emergent_significance_no_M0_norm_tibble,
+    emergent_significance_M0_norm_tibble
+  ) %>%
     dplyr::mutate(emergentScore = -log10(p_val_late_diff)) %>%
     dplyr::arrange(desc(emergentScore))
 
   lm_scores <- combined_emergent_significance %>%
     # Remove NA values
-    dplyr::filter(!is.na(p_val_interaction) & !is.na(p_val_early_diff) & !is.na(p_val_late_diff)) %>%
+    dplyr::filter(
+      !is.na(p_val_interaction) &
+        !is.na(p_val_early_diff) &
+        !is.na(p_val_late_diff)
+    ) %>%
     # (1) delta between treatment and control changes between t_early and t_late
-    dplyr::mutate(is_p_val_interaction = p_val_interaction <= p_val_interaction_threshold) %>%
+    dplyr::mutate(
+      is_p_val_interaction = p_val_interaction <= p_val_interaction_threshold
+    ) %>%
     # (2) treatment and control is not different in t_early
-    dplyr::mutate(is_p_val_early_diff = p_val_early_diff >= p_val_t_early_threshold) %>%
+    dplyr::mutate(
+      is_p_val_early_diff = p_val_early_diff >= p_val_t_early_threshold
+    ) %>%
     # (3) treatment and control is different in t_late
-    dplyr::mutate(is_p_val_late_diff = p_val_late_diff <= p_val_t_late_threshold) %>%
+    dplyr::mutate(
+      is_p_val_late_diff = p_val_late_diff <= p_val_t_late_threshold
+    ) %>%
     # Sample-specific normalization to M0
-    dplyr::filter(!is_filter_M0_normalize | (is_filter_M0_normalize & is_M0_normalize))
+    dplyr::filter(
+      !is_filter_M0_normalize | (is_filter_M0_normalize & is_M0_normalize)
+    )
 
   return(lm_scores)
 }

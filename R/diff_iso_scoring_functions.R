@@ -25,9 +25,15 @@
 #' and \code{labeled_samples} in this \code{isotope_matrix}.
 #'
 #' @export
-diff_iso_m_plus_zero_fraction_WelchTTest <- function(isotope_matrix, unlabeled_samples, labeled_samples) {
-  unlabeled_envelopes <- isotope_matrix %>% dplyr::filter(sample %in% unlabeled_samples)
-  labeled_envelopes <- isotope_matrix %>% dplyr::filter(sample %in% labeled_samples)
+diff_iso_m_plus_zero_fraction_WelchTTest <- function(
+  isotope_matrix,
+  unlabeled_samples,
+  labeled_samples
+) {
+  unlabeled_envelopes <- isotope_matrix %>%
+    dplyr::filter(sample %in% unlabeled_samples)
+  labeled_envelopes <- isotope_matrix %>%
+    dplyr::filter(sample %in% labeled_samples)
 
   if ("C12 PARENT" %in% colnames(isotope_matrix)) {
     unlabeled_m_plus_zero_fraction <- unlabeled_envelopes$`C12 PARENT`
@@ -43,30 +49,44 @@ diff_iso_m_plus_zero_fraction_WelchTTest <- function(isotope_matrix, unlabeled_s
   }
 
   # explicitly remove any NA values
-  unlabeled_m_plus_zero_fraction <- unlabeled_m_plus_zero_fraction[!is.na(unlabeled_m_plus_zero_fraction)]
-  labeled_m_plus_zero_fraction <- labeled_m_plus_zero_fraction[!is.na(labeled_m_plus_zero_fraction)]
+  unlabeled_m_plus_zero_fraction <- unlabeled_m_plus_zero_fraction[
+    !is.na(unlabeled_m_plus_zero_fraction)
+  ]
+  labeled_m_plus_zero_fraction <- labeled_m_plus_zero_fraction[
+    !is.na(labeled_m_plus_zero_fraction)
+  ]
 
   # If variability cannot be computed for one set of measurements, t-test cannot be performed.
   # score of 0 indicates no evidence for incorporation.
-  if (is.na(var(unlabeled_m_plus_zero_fraction)) || is.na(var(labeled_m_plus_zero_fraction))) {
+  if (
+    is.na(var(unlabeled_m_plus_zero_fraction)) ||
+      is.na(var(labeled_m_plus_zero_fraction))
+  ) {
     return(0)
   }
 
   # If data has no variability (e.g., data is present by is essentially constant, t-test cannot be performed.)
   # score of "0" indicates no evidence for incorporation.
-  if (var(unlabeled_m_plus_zero_fraction) < 1e-10 || var(labeled_m_plus_zero_fraction) < 1e-10) {
+  if (
+    var(unlabeled_m_plus_zero_fraction) < 1e-10 ||
+      var(labeled_m_plus_zero_fraction) < 1e-10
+  ) {
     return(0)
   }
 
   # Welch's t-test
-  welch_result <- t.test(unlabeled_m_plus_zero_fraction, labeled_m_plus_zero_fraction)
+  welch_result <- t.test(
+    unlabeled_m_plus_zero_fraction,
+    labeled_m_plus_zero_fraction
+  )
 
   # p-value
   welch_p_value <- welch_result$p.value
 
   # [M+0] should be relatively smaller in the labeled sample set.
   # Otherwise, the signal isn't real / the quant is incorrect.
-  is_real_incorporation <- mean(unlabeled_m_plus_zero_fraction) > mean(labeled_m_plus_zero_fraction)
+  is_real_incorporation <- mean(unlabeled_m_plus_zero_fraction) >
+    mean(labeled_m_plus_zero_fraction)
 
   score <- 0
   if (is_real_incorporation && !is.na(welch_p_value)) {
@@ -100,9 +120,15 @@ diff_iso_m_plus_zero_fraction_WelchTTest <- function(isotope_matrix, unlabeled_s
 #' and \code{condition_1_samples} in this \code{isotope_matrix}.
 #'
 #' @export
-diff_iso_all_isotopes_WelchTTest <- function(isotope_matrix, condition_1_samples, condition_2_samples) {
-  condition_1_envelopes <- isotope_matrix %>% dplyr::filter(sample %in% condition_1_samples)
-  condition_2_envelopes <- isotope_matrix %>% dplyr::filter(sample %in% condition_2_samples)
+diff_iso_all_isotopes_WelchTTest <- function(
+  isotope_matrix,
+  condition_1_samples,
+  condition_2_samples
+) {
+  condition_1_envelopes <- isotope_matrix %>%
+    dplyr::filter(sample %in% condition_1_samples)
+  condition_2_envelopes <- isotope_matrix %>%
+    dplyr::filter(sample %in% condition_2_samples)
 
   isotope_matrix_cols <- colnames(isotope_matrix)
   isotopes <- isotope_matrix_cols[!grepl("sample", isotope_matrix_cols)]
@@ -118,16 +144,26 @@ diff_iso_all_isotopes_WelchTTest <- function(isotope_matrix, condition_1_samples
     condition_2_measurements <- condition_2_envelopes[, isotope]
 
     # explicitly remove any NA values
-    condition_1_measurements <- condition_1_measurements[!is.na(condition_1_measurements)]
-    condition_2_measurements <- condition_2_measurements[!is.na(condition_2_measurements)]
+    condition_1_measurements <- condition_1_measurements[
+      !is.na(condition_1_measurements)
+    ]
+    condition_2_measurements <- condition_2_measurements[
+      !is.na(condition_2_measurements)
+    ]
 
     # If variability cannot be computed for one set of measurements, t-test cannot be performed.
     # score of 0 indicates no evidence for incorporation.
-    if (is.na(var(condition_1_measurements)) || is.na(var(condition_2_measurements))) {
+    if (
+      is.na(var(condition_1_measurements)) ||
+        is.na(var(condition_2_measurements))
+    ) {
       next
     }
 
-    if (var(condition_1_measurements) >= 1e-10 && var(condition_2_measurements) >= 1e-10) {
+    if (
+      var(condition_1_measurements) >= 1e-10 &&
+        var(condition_2_measurements) >= 1e-10
+    ) {
       welch_result <- t.test(condition_1_measurements, condition_2_measurements)
       welch_p_value <- welch_result$p.value
       if (!is.na(welch_p_value)) {
@@ -167,16 +203,32 @@ diff_iso_all_isotopes_WelchTTest <- function(isotope_matrix, condition_1_samples
 #' and \code{condition_1_samples} in this \code{isotope_matrix}.
 #'
 #' @export
-diff_iso_all_isotopes_WelchTTest_subset <- function(isotope_matrix, subset_filters, condition_1_regex, condition_2_regex) {
+diff_iso_all_isotopes_WelchTTest_subset <- function(
+  isotope_matrix,
+  subset_filters,
+  condition_1_regex,
+  condition_2_regex
+) {
   isotope_matrix_adj <- isotope_matrix
   for (subset_filter in subset_filters) {
-    isotope_matrix_adj <- isotope_matrix_adj %>% dplyr::filter(grepl(subset_filter, sample))
+    isotope_matrix_adj <- isotope_matrix_adj %>%
+      dplyr::filter(grepl(subset_filter, sample))
   }
 
-  condition_1_samples <- isotope_matrix_adj$sample[grepl(condition_1_regex, isotope_matrix_adj$sample)]
-  condition_2_samples <- isotope_matrix_adj$sample[grepl(condition_2_regex, isotope_matrix_adj$sample)]
+  condition_1_samples <- isotope_matrix_adj$sample[grepl(
+    condition_1_regex,
+    isotope_matrix_adj$sample
+  )]
+  condition_2_samples <- isotope_matrix_adj$sample[grepl(
+    condition_2_regex,
+    isotope_matrix_adj$sample
+  )]
 
-  return(diff_iso_all_isotopes_WelchTTest(isotope_matrix_adj, condition_1_samples, condition_2_samples))
+  return(diff_iso_all_isotopes_WelchTTest(
+    isotope_matrix_adj,
+    condition_1_samples,
+    condition_2_samples
+  ))
 }
 
 
@@ -287,14 +339,19 @@ diff_iso_emergent_significance <- function(
     p_val_late_diff <- NA
 
     # Safety check: ensure the interaction wasn't dropped due to singularities (NA)
-    if ("Treatment:Time" %in% rownames(stats) && "Treatment" %in% rownames(stats)) {
+    if (
+      "Treatment:Time" %in% rownames(stats) && "Treatment" %in% rownames(stats)
+    ) {
       p_val_interaction <- stats["Treatment:Time", "Pr(>|t|)"]
       p_val_early_diff <- stats["Treatment", "Pr(>|t|)"]
 
       # Manual verification: Calculating the 'Late' p-value specifically
       p_val_late_diff <- suppressWarnings(tryCatch(
         {
-          late_test <- multcomp::glht(model_results, linfct = c("Treatment + Treatment:Time = 0"))
+          late_test <- multcomp::glht(
+            model_results,
+            linfct = c("Treatment + Treatment:Time = 0")
+          )
           as.numeric(summary(late_test)$test$pvalues[1])
         },
         error = function(e) {
@@ -303,9 +360,21 @@ diff_iso_emergent_significance <- function(
       ))
     }
 
-    results[i, "p_val_interaction"] <- ifelse(is.finite(p_val_interaction), p_val_interaction, NA)
-    results[i, "p_val_early_diff"] <- ifelse(is.finite(p_val_early_diff), p_val_early_diff, NA)
-    results[i, "p_val_late_diff"] <- ifelse(is.finite(p_val_late_diff), p_val_late_diff, NA)
+    results[i, "p_val_interaction"] <- ifelse(
+      is.finite(p_val_interaction),
+      p_val_interaction,
+      NA
+    )
+    results[i, "p_val_early_diff"] <- ifelse(
+      is.finite(p_val_early_diff),
+      p_val_early_diff,
+      NA
+    )
+    results[i, "p_val_late_diff"] <- ifelse(
+      is.finite(p_val_late_diff),
+      p_val_late_diff,
+      NA
+    )
   }
   return(results)
 }

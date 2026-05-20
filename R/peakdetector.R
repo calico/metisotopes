@@ -83,7 +83,11 @@ peakdetector_add_params <- function(args, params) {
 #'
 #' @export
 peakdetector_add_samples <- function(args, sample_directory) {
-  samples <- list.files(sample_directory, full.names = TRUE, pattern = "*.mzX?ML$")
+  samples <- list.files(
+    sample_directory,
+    full.names = TRUE,
+    pattern = "*.mzX?ML$"
+  )
   sample_str <- paste0(samples, collapse = " ")
   args <- c(args, sample_str)
   return(args)
@@ -103,7 +107,11 @@ peakdetector_add_samples <- function(args, sample_directory) {
 #'
 #' @export
 peakdetector_add_rt_file <- function(args, sample_directory) {
-  rt_files <- list.files(sample_directory, full.names = TRUE, pattern = "*.rt$|*.apts$")
+  rt_files <- list.files(
+    sample_directory,
+    full.names = TRUE,
+    pattern = "*.rt$|*.apts$"
+  )
   rt_str <- paste0(rt_files, collapse = " ")
   args <- c(args, rt_str)
   return(args)
@@ -170,7 +178,10 @@ peakdetector_command_line <- function(
   args <- peakdetector_add_samples(args, sample_directory)
 
   # Create fully formatted string
-  cmd <- paste0(paste0(peakdetector_executable, " "), paste0(args, collapse = " "))
+  cmd <- paste0(
+    paste0(peakdetector_executable, " "),
+    paste0(args, collapse = " ")
+  )
 
   return(cmd)
 }
@@ -233,7 +244,9 @@ peakdetector_default_parameters <- function(spectral_library_file) {
   # Baseline Computation
   params[["-8"]] <- 80 # Drop top x% intensities from chromatogram
   params[["-7"]] <- 5 # Baseline Smoothing Window
-  params[["--eicBaselineEstimationType"]] <- "EIC_NON_PEAK_MEDIAN_SMOOTHED_INTENSITY" # Baseline Computation Type
+  params[[
+    "--eicBaselineEstimationType"
+  ]] <- "EIC_NON_PEAK_MEDIAN_SMOOTHED_INTENSITY" # Baseline Computation Type
 
   # Fragmentation Matching
   params[["-0"]] <- "metaboliteSearch" # Scoring Algorithm
@@ -261,8 +274,12 @@ peakdetector_default_parameters <- function(spectral_library_file) {
 peakdetector_default_isotope_parameters <- function() {
   isotope_params_list <- list()
   isotope_params_list[["ppm"]] <- 10
-  isotope_params_list[["labeledIsotopeRetentionPolicy"]] <- "ONLY_CARBON_TWO_LABELS"
-  isotope_params_list[["isotopicExtractionAlgorithm"]] <- "MEIC_FWHM_RT_BOUNDS_AREA"
+  isotope_params_list[[
+    "labeledIsotopeRetentionPolicy"
+  ]] <- "ONLY_CARBON_TWO_LABELS"
+  isotope_params_list[[
+    "isotopicExtractionAlgorithm"
+  ]] <- "MEIC_FWHM_RT_BOUNDS_AREA"
   isotope_params_list[["isCombineOverlappingIsotopes"]] <- TRUE
   isotope_params_list[["isExtractNIsotopes"]] <- TRUE
   isotope_params_list[["maxIsotopesToExtract"]] <- 7
@@ -295,13 +312,23 @@ peakdetector_default_isotope_parameters <- function() {
 #' @returns encoded mzkitchen parameters string
 #'
 #' @export
-peakdetector_metabolite_search_params <- function(ms2MinNumMatches = 0, rtIsRequireRtMatch = 0, rtMatchTolerance = 1) {
+peakdetector_metabolite_search_params <- function(
+  ms2MinNumMatches = 0,
+  rtIsRequireRtMatch = 0,
+  rtMatchTolerance = 1
+) {
   mzkitchen_search_params <- paste0(
-    "ms2MinNumMatches=", ms2MinNumMatches, ";",
+    "ms2MinNumMatches=",
+    ms2MinNumMatches,
+    ";",
     "ms2PpmTolr=20;",
     "ms1PpmTolr=10;",
-    "rtIsRequireRtMatch=", rtIsRequireRtMatch, ";",
-    "rtMatchTolerance=", rtMatchTolerance, ";",
+    "rtIsRequireRtMatch=",
+    rtIsRequireRtMatch,
+    ";",
+    "rtMatchTolerance=",
+    rtMatchTolerance,
+    ";",
     "scanFilterMinFracIntensity=0.01;",
     "consensusMs2MzRemovedStr='202.077,203.084';",
     "consensusMs2MzRemovedTol=10;",
