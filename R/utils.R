@@ -446,7 +446,7 @@ import_isotope_mzroll <- function(
     dplyr::distinct() %>%
     dplyr::arrange(desc(num_samples), groupId)
 
-  clamanized_peakgroups <- claman:::process_mzroll_identify_peakgroups(
+  clamanized_peakgroups <- claman::process_mzroll_identify_peakgroups(
     clamanized_peakgroups,
     only_identified = TRUE
   )
