@@ -24,6 +24,8 @@ defaults:
 jobs:
   run-r-lint-format:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: checkout base repo
@@ -79,3 +81,20 @@ jobs:
             https://github.com/etiennebacher/jarl/releases/download/0.5.0/jarl-installer.sh | sh
           export PATH="$HOME/.local/bin:$PATH"
           jarl check --fix --allow-dirty --allow-no-vcs ${{ inputs.working-dir }}
+
+      # ── Commit and push changes ───────────────────────────────
+      - name: Commit and push formatted changes
+        if: >-
+          inputs.auto-format-enabled == true
+          && github.ref != 'refs/heads/main'
+          && (steps.air-check.outcome == 'failure' || steps.jarl-check.outcome == 'failure')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff --cached --quiet; then
+            echo "No formatting changes to commit."
+          else
+            git commit -m "chore: auto-format R code with air and jarl"
+            git push
+          fi
