@@ -2,21 +2,21 @@ name: Format and lint R code
 
 on:
   workflow_dispatch:
+    inputs:
+      working-dir:
+        required: false
+        description: "Directory containing R package to lint and format"
+        type: string
+        default: "."
+      auto-format-enabled:
+        required: false
+        description: "Setting to enable auto-formatting"
+        type: string
+        default: "false"
   push:
     paths-ignore:
-      - "*Rd"
-      - "*png"
-  inputs:
-    working-dir:
-      required: false
-      description: "Directory containing R package to lint and format"
-      type: string
-      default: "."
-    auto-format-enabled:
-      required: false
-      description: "Setting to enable auto-formatting"
-      type: string
-      default: "false"
+      - "*.Rd"
+      - "*.png"
 
 permissions:
   contents: "read"
