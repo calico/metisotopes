@@ -1,6 +1,7 @@
-name: Format and lint R code 
+name: Format and lint R code
 
 on:
+  workflow_dispatch:
   push:
     paths-ignore:
       - "*Rd"
