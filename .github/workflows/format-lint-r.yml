@@ -5,12 +5,12 @@ on:
     inputs:
       working-dir:
         required: false
-        description: "Directory containing R package to lint and format"
+        description: "Directory containing R package"
         type: string
         default: "."
       auto-format-enabled:
         required: false
-        description: "Setting to enable auto-formatting"
+        description: "Enable auto-formatting"
         type: boolean
         default: false
   push:
