@@ -29,12 +29,16 @@ get_precomputed_iso_df <- function(
   is_fractional_abundance = FALSE,
   sample_order = NULL
 ) {
-  peaks<-PDB_peaks(iso_mzrolldb_file)
-  groups<-PDB_peakgroups(iso_mzrolldb_file)
+  peaks <- PDB_peaks(iso_mzrolldb_file)
+  groups <- PDB_peakgroups(iso_mzrolldb_file)
   samples <- PDB_sample_list(iso_mzrolldb_file)
 
   peaks_short <- peaks %>%
-    dplyr::select(groupId, sampleId, !!rlang::sym(isotope_quant_measurement_type))
+    dplyr::select(
+      groupId,
+      sampleId,
+      !!rlang::sym(isotope_quant_measurement_type)
+    )
 
   group_parents <- groups %>%
     dplyr::filter(parentGroupId == 0) %>%
