@@ -53,11 +53,11 @@ jobs:
           steps.air-check.outcome == 'failure'
           && github.ref != 'refs/heads/main'
           && inputs.auto-format-enabled == 'true'
-        uses: calico/calico-github-actions/.github/actions/auto-format-code@main
-        with:
-          formatter: air
-          working-dir: ${{ inputs.working-dir }}
-          sweng-bot-private-key: ${{ secrets.GHA_SWENG_BOT_KEY }}
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://github.com/posit-dev/air/releases/download/0.9.0/air-installer.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          air format ${{ inputs.working-dir }}
 
       # ── jarl: linting ─────────────────────────────────────────
       - name: Lint R code with jarl
@@ -81,6 +81,6 @@ jobs:
           && inputs.auto-format-enabled == 'true'
         run: |
           curl --proto '=https' --tlsv1.2 -LsSf \
-          https://github.com/etiennebacher/jarl/releases/download/0.5.0/jarl-installer.sh | sh
+            https://github.com/etiennebacher/jarl/releases/download/0.5.0/jarl-installer.sh | sh
           export PATH="$HOME/.local/bin:$PATH"
           jarl check --fix --allow-dirty --allow-no-vcs ${{ inputs.working-dir }}
