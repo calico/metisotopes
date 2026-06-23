@@ -815,7 +815,6 @@ compute_diff_scores <- function(
     dplyr::mutate(score_diff = abs(unlabeled_score - labeled_score)) %>%
     dplyr::mutate(groupId = as.integer(groupId)) %>%
     dplyr::arrange(desc(score_diff))
-
   treatment_vs_control_w_header <- treatment_vs_control_combined %>%
     dplyr::inner_join(
       sig_isotopic_incorporation_scores,
