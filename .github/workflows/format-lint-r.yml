@@ -21,7 +21,7 @@ on:
 jobs:
   run-r-lint-format:
     name: Style metisotopes R package
-    uses: ./.github/workflows/r-lint-format-action.yml
+    uses: ./.github/actions/r-lint-format-action.yml
     with:
       working-dir: ${{ inputs.working-dir || '.' }}
       auto-format-enabled: ${{ inputs.auto-format-enabled || false }}
