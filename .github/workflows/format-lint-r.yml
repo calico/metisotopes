@@ -6,6 +6,17 @@ on:
     paths-ignore:
       - "*Rd"
       - "*png"
+  inputs:
+    working-dir:
+      required: false
+      description: "Directory containing R package to lint and format"
+      type: string
+      default: "."
+    auto-format-enabled:
+      required: false
+      description: "Setting to enable auto-formatting"
+      type: string
+      default: "false"
 
 permissions:
   contents: "read"
@@ -16,11 +27,60 @@ defaults:
     shell: bash
 
 jobs:
-  call-r-lint:
-    uses: calico/calico-github-actions/.github/workflows/r-lint.yml@main
-    permissions:
-      contents: "write"
-      id-token: "write"
-    with:
-      auto-format-enabled: true
-    secrets: inherit
+  run-r-lint-format:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout base repo
+        uses: actions/checkout@v6
+
+      # ── Air: formatting ───────────────────────────────────────
+      - name: Install Air
+        uses: posit-dev/setup-air@v1.0.1
+
+      - name: Check formatting with Air
+        if: inputs.auto-format-enabled == 'false'
+        run: air format ${{ github.workspace }}/${{ inputs.working-dir }} --check
+
+      - name: Check formatting with Air (auto-format path)
+        if: inputs.auto-format-enabled == 'true'
+        id: air-check
+        continue-on-error: true
+        run: air format ${{ github.workspace }}/${{ inputs.working-dir }} --check
+
+      - name: Auto format with Air
+        if: >-
+          steps.air-check.outcome == 'failure'
+          && github.ref != 'refs/heads/main'
+          && inputs.auto-format-enabled == 'true'
+        uses: calico/calico-github-actions/.github/actions/auto-format-code@main
+        with:
+          formatter: air
+          working-dir: ${{ inputs.working-dir }}
+          sweng-bot-private-key: ${{ secrets.GHA_SWENG_BOT_KEY }}
+
+      # ── jarl: linting ─────────────────────────────────────────
+      - name: Lint R code with jarl
+        if: inputs.auto-format-enabled == 'false'
+        uses: etiennebacher/setup-jarl@v0.1.1
+        with:
+          src: ${{ github.workspace }}/${{ inputs.working-dir }}
+
+      - name: Lint R code with jarl (auto-format path)
+        if: inputs.auto-format-enabled == 'true'
+        id: jarl-check
+        continue-on-error: true
+        uses: etiennebacher/setup-jarl@v0.1.1
+        with:
+          src: ${{ github.workspace }}/${{ inputs.working-dir }}
+
+      - name: Auto fix lint issues with jarl
+        if: >-
+          steps.jarl-check.outcome == 'failure'
+          && github.ref != 'refs/heads/main'
+          && inputs.auto-format-enabled == 'true'
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+          https://github.com/etiennebacher/jarl/releases/download/0.5.0/jarl-installer.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          jarl check --fix --allow-dirty --allow-no-vcs ${{ inputs.working-dir }}
