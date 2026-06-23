@@ -1,0 +1,88 @@
+name: R Lint and Format Action
+description: Lint and format R code with air and jarl
+
+inputs:
+  working-dir:
+    description: "Directory containing R package"
+    required: false
+    default: "."
+  auto-format-enabled:
+    description: "Enable auto-formatting"
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    # ── Air: formatting ───────────────────────────────────────
+    - name: Install Air
+      uses: posit-dev/setup-air@v1.0.1
+
+    - name: Check formatting with Air
+      if: inputs.auto-format-enabled == 'false'
+      run: air format ${{ github.workspace }}/${{ inputs.working-dir }} --check
+      shell: bash
+
+    - name: Check formatting with Air (auto-format path)
+      if: inputs.auto-format-enabled == 'true'
+      id: air-check
+      continue-on-error: true
+      run: air format ${{ github.workspace }}/${{ inputs.working-dir }} --check
+      shell: bash
+
+    - name: Auto format with Air
+      if: >-
+        steps.air-check.outcome == 'failure'
+        && github.ref != 'refs/heads/main'
+        && inputs.auto-format-enabled == 'true'
+      run: |
+        curl --proto '=https' --tlsv1.2 -LsSf \
+          https://github.com/posit-dev/air/releases/download/0.9.0/air-installer.sh | sh
+        export PATH="$HOME/.local/bin:$PATH"
+        air format ${{ inputs.working-dir }}
+      shell: bash
+
+    # ── jarl: linting ─────────────────────────────────────────
+    - name: Lint R code with jarl
+      if: inputs.auto-format-enabled == 'false'
+      uses: etiennebacher/setup-jarl@v0.1.1
+      with:
+        src: ${{ github.workspace }}/${{ inputs.working-dir }}
+
+    - name: Lint R code with jarl (auto-format path)
+      if: inputs.auto-format-enabled == 'true'
+      id: jarl-check
+      continue-on-error: true
+      uses: etiennebacher/setup-jarl@v0.1.1
+      with:
+        src: ${{ github.workspace }}/${{ inputs.working-dir }}
+
+    - name: Auto fix lint issues with jarl
+      if: >-
+        steps.jarl-check.outcome == 'failure'
+        && github.ref != 'refs/heads/main'
+        && inputs.auto-format-enabled == 'true'
+      run: |
+        curl --proto '=https' --tlsv1.2 -LsSf \
+          https://github.com/etiennebacher/jarl/releases/download/0.5.0/jarl-installer.sh | sh
+        export PATH="$HOME/.local/bin:$PATH"
+        jarl check --fix --allow-dirty --allow-no-vcs ${{ inputs.working-dir }}
+      shell: bash
+
+    # ── Commit and push changes ───────────────────────────────
+    - name: Commit and push formatted changes
+      if: >-
+        inputs.auto-format-enabled == 'true'
+        && github.ref != 'refs/heads/main'
+        && (steps.air-check.outcome == 'failure' || steps.jarl-check.outcome == 'failure')
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add .
+        if git diff --cached --quiet; then
+          echo "No formatting changes to commit."
+        else
+          git commit -m "chore: auto-format R code with air and jarl"
+          git push
+        fi
+      shell: bash

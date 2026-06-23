@@ -21,8 +21,16 @@ on:
 jobs:
   run-r-lint-format:
     name: Style metisotopes R package
-    uses: ./.github/actions/r-lint-format-action.yml
-    with:
-      working-dir: ${{ inputs.working-dir || '.' }}
-      auto-format-enabled: ${{ inputs.auto-format-enabled || false }}
-    secrets: inherit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Run R lint and format
+        uses: ./.github/actions/r-lint-format
+        with:
+          working-dir: ${{ inputs.working-dir || '.' }}
+          auto-format-enabled: ${{ inputs.auto-format-enabled == true && 'true' || 'false' }}
