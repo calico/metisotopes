@@ -18,69 +18,11 @@ on:
       - "*.Rd"
       - "*.png"
 
-permissions:
-  contents: "read"
-  id-token: "write"
-
-defaults:
-  run:
-    shell: bash
-
 jobs:
   run-r-lint-format:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: checkout base repo
-        uses: actions/checkout@v6
-
-      # ── Air: formatting ───────────────────────────────────────
-      - name: Install Air
-        uses: posit-dev/setup-air@v1.0.1
-
-      - name: Check formatting with Air
-        if: inputs.auto-format-enabled == false
-        run: air format ${{ github.workspace }}/${{ inputs.working-dir }} --check
-
-      - name: Check formatting with Air (auto-format path)
-        if: inputs.auto-format-enabled == true
-        id: air-check
-        continue-on-error: true
-        run: air format ${{ github.workspace }}/${{ inputs.working-dir }} --check
-
-      - name: Auto format with Air
-        if: >-
-          steps.air-check.outcome == 'failure'
-          && github.ref != 'refs/heads/main'
-          && inputs.auto-format-enabled == true
-        run: |
-          curl --proto '=https' --tlsv1.2 -LsSf \
-            https://github.com/posit-dev/air/releases/download/0.9.0/air-installer.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
-          air format ${{ inputs.working-dir }}
-
-      # ── jarl: linting ─────────────────────────────────────────
-      - name: Lint R code with jarl
-        if: inputs.auto-format-enabled == false
-        uses: etiennebacher/setup-jarl@v0.1.1
-        with:
-          src: ${{ github.workspace }}/${{ inputs.working-dir }}
-
-      - name: Lint R code with jarl (auto-format path)
-        if: inputs.auto-format-enabled == true
-        id: jarl-check
-        continue-on-error: true
-        uses: etiennebacher/setup-jarl@v0.1.1
-        with:
-          src: ${{ github.workspace }}/${{ inputs.working-dir }}
-
-      - name: Auto fix lint issues with jarl
-        if: >-
-          steps.jarl-check.outcome == 'failure'
-          && github.ref != 'refs/heads/main'
-          && inputs.auto-format-enabled == true
-        run: |
-          curl --proto '=https' --tlsv1.2 -LsSf \
-            https://github.com/etiennebacher/jarl/releases/download/0.5.0/jarl-installer.sh | sh
-          export PATH="$HOME/.local/bin:$PATH"
-          jarl check --fix --allow-dirty --allow-no-vcs ${{ inputs.working-dir }}
+    name: Style metisotopes R package
+    uses: ./.github/workflows/r-lint-format-action.yml
+    with:
+      working-dir: ${{ inputs.working-dir || '.' }}
+      auto-format-enabled: ${{ inputs.auto-format-enabled || false }}
+    secrets: inherit
