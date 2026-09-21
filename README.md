@@ -9,7 +9,8 @@ remotes::install_github("calico/metisotopes", force=TRUE, build_vignettes=TRUE, 
 ```
 # Version Changelog
 
-- **1.0.0** initial public release
+- **1.0.0** Initial public release
+- **1.1.0** Major bug fixes, `pipeline_diff_iso_search()`, `diff_iso_rescore_and_label()`, `diff_iso_rescore()` function signature changes.
 
 # Functions
 - **compute_diff_scores**: Computes differential isotope scores comparing control and treatment subsets.

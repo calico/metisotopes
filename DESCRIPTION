@@ -1,7 +1,7 @@
 Package: metisotopes
 Type: Package
 Title: Isotope Analysis and Manipulation
-Version: 1.0.0
+Version: 1.1.0
 Author: Phil Seitzer
 Maintainer: Phil Seitzer <phillipseitzer@calicolabs.com>
 Description: Convenience functions for analyzing / processing isotopic envelopes.

@@ -31,7 +31,7 @@ representative labeled sample set.}
 
 \item{diff_iso_params}{named list containing parameters that are used in the
 construction of individual peak group isotopic matrices. Primarily used
-by \code{mzkitcpp::ISO_isotope_matrices()}.}
+by \code{mzkitcpp::ISO_isotope_matrices()} or \code{get_precomputed_iso_df()}.}
 
 \item{verbose}{if \code{TRUE}, print additional messages to the console.}
 }

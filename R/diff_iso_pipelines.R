@@ -10,6 +10,11 @@
 #' If there is any file named \code{peakdetector.mzrollDB} in the \code{output_directory},
 #' it will be deleted.
 #'
+#' Note that in this pipeline, isotopes are always compared using fractional values,
+#' *even if the input parameter does not state as such*.
+#' In other words, the parameter value is silently always set
+#' \code{diff_iso_params[['diffIsoScoringFractionOfSampleTotal']] = TRUE}
+#'
 #' @param peakdetector_executable absolute path to compiled peakdetector executable.
 #' @param peakdetector_methods_folder absolute path to peakdetector methods folder.
 #' @param peakdetector_params list of peakdetector parameters.
@@ -18,12 +23,13 @@
 #' @param unscored_file_name name of mzrollDB output file.
 #' @param rescore_suffix added to file name in output directory for re-scored version
 #'   of output mzrollDB file.
-#' @param is_correct_natural_abundance When determining isotope matrices, optionally
-#'    correct for natural abundance.
 #' @param unlabeled_samples_pattern string pattern to identify samples in
 #'    representative unlabeled sample set.
 #' @param labeled_samples_pattern string pattern to identify samples in
 #'    representative labeled sample set.
+#' @param diff_iso_params named list containing parameters that are used in the
+#'    construction of individual peak group isotopic matrices. Primarily used
+#'    by \code{mzkitcpp::ISO_isotope_matrices()} or \code{get_precomputed_iso_df()}.
 #' @param rank_thresh minimum value for diff iso scoring to label peak group.
 #'   Default value is \code{1.30103}, which corresponds to \code{-log10(0.05)}.
 #' @param verbose if \code{TRUE}, print additional messages to the console.
@@ -37,9 +43,9 @@ pipeline_diff_iso_search <- function(
   output_directory,
   unscored_file_name,
   rescore_suffix,
-  is_correct_natural_abundance,
   unlabeled_samples_pattern,
   labeled_samples_pattern,
+  diff_iso_params,
   rank_thresh = 1.30103, # = -log10(.05)
   verbose = TRUE
 ) {
@@ -91,6 +97,10 @@ pipeline_diff_iso_search <- function(
   DBI::dbDisconnect(conn = con)
 
   # [6] Perform Diff Iso Scoring
+
+  # Required for diff_iso_m_plus_zero_fraction_WelchTTest() to work properly
+  diff_iso_params[["diffIsoScoringFractionOfSampleTotal"]] <- TRUE
+
   tictoc::tic("Diff Iso Scoring")
   diff_iso_rescore_and_label(
     original_mzrolldb_file = unscored_mzrolldb_file,
@@ -98,7 +108,7 @@ pipeline_diff_iso_search <- function(
     rescoring_function = metisotopes::diff_iso_m_plus_zero_fraction_WelchTTest,
     unlabeled_samples_pattern = unlabeled_samples_pattern,
     labeled_samples_pattern = labeled_samples_pattern,
-    is_correct_natural_abundance = is_correct_natural_abundance,
+    diff_iso_params = diff_iso_params,
     rescore_suffix = rescore_suffix,
     ms2_score_threshold = 0.0, # since we are searching unknowns
     rank_thresh = rank_thresh,

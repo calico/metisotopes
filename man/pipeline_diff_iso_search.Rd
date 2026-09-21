@@ -12,9 +12,9 @@ pipeline_diff_iso_search(
   output_directory,
   unscored_file_name,
   rescore_suffix,
-  is_correct_natural_abundance,
   unlabeled_samples_pattern,
   labeled_samples_pattern,
+  diff_iso_params,
   rank_thresh = 1.30103,
   verbose = TRUE
 )
@@ -35,14 +35,15 @@ pipeline_diff_iso_search(
 \item{rescore_suffix}{added to file name in output directory for re-scored version
 of output mzrollDB file.}
 
-\item{is_correct_natural_abundance}{When determining isotope matrices, optionally
-correct for natural abundance.}
-
 \item{unlabeled_samples_pattern}{string pattern to identify samples in
 representative unlabeled sample set.}
 
 \item{labeled_samples_pattern}{string pattern to identify samples in
 representative labeled sample set.}
+
+\item{diff_iso_params}{named list containing parameters that are used in the
+construction of individual peak group isotopic matrices. Primarily used
+by \code{mzkitcpp::ISO_isotope_matrices()} or \code{get_precomputed_iso_df()}.}
 
 \item{rank_thresh}{minimum value for diff iso scoring to label peak group.
 Default value is \code{1.30103}, which corresponds to \code{-log10(0.05)}.}
@@ -59,4 +60,9 @@ This function will create two files in the designated \code{output_directory}
 : (1) a basic mzrollDB results file, and (2) a rescored mzrollDB file.
 If there is any file named \code{peakdetector.mzrollDB} in the \code{output_directory},
 it will be deleted.
+
+Note that in this pipeline, isotopes are always compared using fractional values,
+*even if the input parameter does not state as such*.
+In other words, the parameter value is silently always set
+\code{diff_iso_params[['diffIsoScoringFractionOfSampleTotal']] = TRUE}
 }

@@ -10,8 +10,8 @@ diff_iso_rescore_and_label(
   rescoring_function,
   unlabeled_samples_pattern,
   labeled_samples_pattern,
+  diff_iso_params,
   rescore_suffix = "-rescored",
-  is_correct_natural_abundance = FALSE,
   ms2_score_threshold = 0.7,
   rank_thresh = 1.30103,
   verbose = TRUE
@@ -32,11 +32,12 @@ representative unlabeled sample set.}
 \item{labeled_samples_pattern}{string pattern to identify samples in
 representative labeled sample set.}
 
+\item{diff_iso_params}{named list containing parameters that are used in the
+construction of individual peak group isotopic matrices. Primarily used
+by \code{mzkitcpp::ISO_isotope_matrices()} or \code{get_precomputed_iso_df()}.}
+
 \item{rescore_suffix}{name to be appended to the \code{original_mzrolldb_file}
 (before the \code{.mzrollDB} file extension) in the renamed output file.}
-
-\item{is_correct_natural_abundance}{When determining isotope matrices, optionally
-correct for natural abundance.}
 
 \item{ms2_score_threshold}{minimum value for MS2 score to label peak group.
 This should be adjusted based on the scoring type, but for a cosine score

@@ -16,7 +16,7 @@
 #'    representative labeled sample set.
 #' @param diff_iso_params named list containing parameters that are used in the
 #'    construction of individual peak group isotopic matrices. Primarily used
-#'    by \code{mzkitcpp::ISO_isotope_matrices()}.
+#'    by \code{mzkitcpp::ISO_isotope_matrices()} or \code{get_precomputed_iso_df()}.
 #' @param verbose if \code{TRUE}, print additional messages to the console.
 #'
 #' @return a tibble comparing the original diff iso scores to the re-scored
@@ -35,22 +35,42 @@ diff_iso_rescore <- function(
   diff_iso_params,
   verbose = TRUE
 ) {
+
   # [1] Import saved sample, peakgroup, and peaks data
   samples <- PDB_sample_list(mzrolldb_file)
   groups <- PDB_peakgroups(mzrolldb_file)
   peaks <- PDB_peaks(mzrolldb_file)
 
   # [2] Generate iso matrices
-  iso_matrices <- mzkitcpp::ISO_isotope_matrices(
-    mzML_dir,
-    samples,
-    peaks,
-    groups,
-    unlabeled_samples,
-    labeled_samples,
-    diff_iso_params,
-    FALSE
-  )
+  isUsePreviouslyComputedIsotopes <- FALSE
+  if ("isUsePreviouslyComputedIsotopes" %in% names(diff_iso_params)) {
+    isUsePreviouslyComputedIsotopes <- diff_iso_params[["isUsePreviouslyComputedIsotopes"]]
+  }
+
+  if (isUsePreviouslyComputedIsotopes) {
+    diffIsoQuantType = "smoothedPeakArea"
+    if ("diffIsoQuantType" %in% names(diff_iso_params)) {
+      diffIsoQuantType = diff_iso_params[["diffIsoQuantType"]]
+    }
+
+    iso_matrices <- get_precomputed_iso_df(
+      mzrolldb_file,
+      isotope_quant_measurement_type = diffIsoQuantType,
+      is_fractional_abundance = TRUE,
+      sample_order = NULL
+    )
+  } else {
+    iso_matrices <- mzkitcpp::ISO_isotope_matrices(
+      mzML_dir,
+      samples,
+      peaks,
+      groups,
+      unlabeled_samples,
+      labeled_samples,
+      diff_iso_params,
+      FALSE
+    )
+  }
 
   if (verbose) {
     cat(paste0(
@@ -143,10 +163,11 @@ diff_iso_rescore <- function(
 #'    representative unlabeled sample set.
 #' @param labeled_samples_pattern string pattern to identify samples in
 #'    representative labeled sample set.
+#' @param diff_iso_params named list containing parameters that are used in the
+#'    construction of individual peak group isotopic matrices. Primarily used
+#'    by \code{mzkitcpp::ISO_isotope_matrices()} or \code{get_precomputed_iso_df()}.
 #' @param rescore_suffix name to be appended to the \code{original_mzrolldb_file}
 #'    (before the \code{.mzrollDB} file extension) in the renamed output file.
-#' @param is_correct_natural_abundance When determining isotope matrices, optionally
-#'    correct for natural abundance.
 #' @param ms2_score_threshold minimum value for MS2 score to label peak group.
 #'   This should be adjusted based on the scoring type, but for a cosine score
 #'   or similar default value of \code{0.7} is fine.
@@ -165,8 +186,8 @@ diff_iso_rescore_and_label <- function(
   rescoring_function,
   unlabeled_samples_pattern,
   labeled_samples_pattern,
+  diff_iso_params,
   rescore_suffix = "-rescored",
-  is_correct_natural_abundance = FALSE,
   ms2_score_threshold = 0.7,
   rank_thresh = 1.30103, # = -log10(.05)
   verbose = TRUE
@@ -190,12 +211,6 @@ diff_iso_rescore_and_label <- function(
     ))
   }
   system(cmd)
-
-  diff_iso_params <- list()
-  diff_iso_params[["diffIsoScoringFractionOfSampleTotal"]] <- TRUE
-  diff_iso_params[[
-    "diffIsoScoringCorrectNatAbundance"
-  ]] <- is_correct_natural_abundance
 
   all_samples_files <- list.files(mzML_dir, pattern = "*.mzX?ML")
 
