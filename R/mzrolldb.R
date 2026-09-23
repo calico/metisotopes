@@ -284,7 +284,7 @@ color_samples <- function(
   )
 
   con <- DBI::dbConnect(RSQLite::SQLite(), dbname = mzrolldb_file_path)
-  DBI::dbWriteTable(con, "samples", samples, overwrite = TRUE)
+  DBI::dbWriteTable(con, "samples", recolored_samples, overwrite = TRUE)
   DBI::dbDisconnect(con)
 
   return(invisible(0))
