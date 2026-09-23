@@ -35,7 +35,6 @@ diff_iso_rescore <- function(
   diff_iso_params,
   verbose = TRUE
 ) {
-
   # [1] Import saved sample, peakgroup, and peaks data
   samples <- PDB_sample_list(mzrolldb_file)
   groups <- PDB_peakgroups(mzrolldb_file)
@@ -44,13 +43,15 @@ diff_iso_rescore <- function(
   # [2] Generate iso matrices
   isUsePreviouslyComputedIsotopes <- FALSE
   if ("isUsePreviouslyComputedIsotopes" %in% names(diff_iso_params)) {
-    isUsePreviouslyComputedIsotopes <- diff_iso_params[["isUsePreviouslyComputedIsotopes"]]
+    isUsePreviouslyComputedIsotopes <- diff_iso_params[[
+      "isUsePreviouslyComputedIsotopes"
+    ]]
   }
 
   if (isUsePreviouslyComputedIsotopes) {
-    diffIsoQuantType = "smoothedPeakArea"
+    diffIsoQuantType <- "smoothedPeakArea"
     if ("diffIsoQuantType" %in% names(diff_iso_params)) {
-      diffIsoQuantType = diff_iso_params[["diffIsoQuantType"]]
+      diffIsoQuantType <- diff_iso_params[["diffIsoQuantType"]]
     }
 
     iso_matrices <- get_precomputed_iso_df(

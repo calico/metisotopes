@@ -118,6 +118,55 @@ PDB_peakgroups <- function(mzrolldb_file_path) {
   return(peakgroups)
 }
 
+#' Labeled groups summary
+#'
+#' @description
+#' returns a formatted table, containing all peak groups that match the label_regex,
+#' in descending order by groupRank. The groupRank column is frequently used to contain
+#' rescored values, e.g. Welch T-test or other statistical tests.
+#'
+#' @param mzrolldb_file_path: file path to mzrolldb file
+#' @param label_regex regex for labels, will return all peak groups that match the regex
+#'
+#' @return formatted table based on high-scoring peakgroups with columns
+#' \code{groupId}, \code{compoundName}, \code{adductName}, \code{groupMz}, \code{groupRt},
+#' \code{ms2Score}, \code{groupRank}
+#'
+#' @export
+PDB_labeled_groups_summary <- function(mzrolldb_file_path, label_regex="c") {
+  groups <- PDB_peakgroups(mzrolldb_file_path)
+  peaks <- PDB_peaks(mzrolldb_file_path)
+
+  parent_groups <- groups %>%
+    dplyr::filter(parentGroupId == 0) %>%
+    dplyr::select(groupId, compoundName, adductName)
+
+  group_summaries <- peaks %>%
+    dplyr::inner_join(parent_groups, by = c("groupId")) %>%
+    dplyr::group_by(groupId) %>%
+    dplyr::mutate(groupMz = mean(peakMz), groupRt = mean(rt)) %>%
+    dplyr::ungroup() %>%
+    dplyr::select(groupId, groupMz, groupRt, compoundName, adductName) %>%
+    dplyr::distinct()
+
+  labeled_groups <- groups %>%
+    dplyr::filter(grepl(label_regex, label)) %>%
+    dplyr::select(groupId, ms2Score, groupRank) %>%
+    dplyr::inner_join(group_summaries, by = c("groupId")) %>%
+    dplyr::select(
+      groupId,
+      compoundName,
+      adductName,
+      groupMz,
+      groupRt,
+      ms2Score,
+      groupRank
+    ) %>%
+    dplyr::arrange(desc(groupRank))
+
+  return(labeled_groups)
+}
+
 #' Label mzrollDB file
 #'
 #' @description
