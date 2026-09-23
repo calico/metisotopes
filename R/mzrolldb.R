@@ -133,7 +133,7 @@ PDB_peakgroups <- function(mzrolldb_file_path) {
 #' \code{ms2Score}, \code{groupRank}.
 #'
 #' @export
-PDB_labeled_groups_summary <- function(mzrolldb_file_path, label_regex="c") {
+PDB_labeled_groups_summary <- function(mzrolldb_file_path, label_regex = "c") {
   groups <- PDB_peakgroups(mzrolldb_file_path)
   peaks <- PDB_peaks(mzrolldb_file_path)
 
