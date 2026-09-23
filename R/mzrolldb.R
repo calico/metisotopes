@@ -243,3 +243,49 @@ label_isotopes_by_top_hits <- function(
 
   return(invisible(0))
 }
+
+#' Color samples
+#'
+#' @description
+#' Color and reorder samples based on name agreement to provided regexes.
+#' Note that this function mutates the mzrolldb file in place.
+#' If you only wish to mutate a table without modifying a file, see
+#' \code{diff_iso_color_samples()}.
+#'
+#' @param mzrolldb_file_path file path to mzrolldb file
+#' @param unlabeled_samples_pattern string pattern to identify samples in
+#'    representative unlabeled sample set.
+#' @param labeled_samples_pattern string pattern to identify samples in
+#'    representative labeled sample set.
+#' @param unlabeled_color color for all unlabeled samples.
+#' @param labeled_color color for all labeled samples.
+#' @param other_color color to color all samples that match to neither labeled
+#' nor unlabeled samples.
+#'
+#' @returns nothing (\code{invisible(0)}), the input file is mutated.
+#'
+#' @export
+color_samples <- function(
+  mzrolldb_file_path,
+  unlabeled_samples_pattern,
+  labeled_samples_pattern,
+  unlabeled_color = c(0.929334998130799, 0.448004990816116, 0.18019400537014),
+  labeled_color = c(0.122087001800537, 0.306293994188309, 0.916074991226196),
+  other_color = c(0.5, 0.5, 0.5)
+) {
+  samples <- PDB_sample_list(mzrolldb_file_path)
+  recolored_samples <- diff_iso_color_samples(
+    samples,
+    unlabeled_samples_pattern,
+    labeled_samples_pattern,
+    unlabeled_color,
+    labeled_color,
+    other_color
+  )
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), dbname = mzrolldb_file_path)
+  DBI::dbWriteTable(con, "samples", samples, overwrite = TRUE)
+  DBI::dbDisconnect(con)
+
+  return(invisible(0))
+}

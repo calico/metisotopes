@@ -224,70 +224,33 @@ diff_iso_color_samples <- function(
   other_color = c(0.5, 0.5, 0.5)
 ) {
   samples_tbl_recolored <- samples_tbl %>%
+    dplyr::mutate(is_labeled = grepl(labeled_samples_pattern, name)) %>%
+    dplyr::mutate(is_unlabeled = grepl(unlabeled_samples_pattern, name)) %>%
+    dplyr::arrange(desc(is_unlabeled), desc(is_labeled), name) %>%
+    dplyr::mutate(sampleOrder = dplyr::row_number() - 1) %>%
     dplyr::mutate(
       color_red = dplyr::case_when(
-        grepl(unlabeled_samples_pattern, name) ~ unlabeled_color[1],
-        grepl(labeled_samples_pattern, name) ~ labeled_color[1],
+        is_unlabeled ~ unlabeled_color[1],
+        is_labeled ~ labeled_color[1],
         TRUE ~ other_color[1]
       ),
       color_green = dplyr::case_when(
-        grepl(unlabeled_samples_pattern, name) ~ unlabeled_color[2],
-        grepl(labeled_samples_pattern, name) ~ labeled_color[2],
+        is_unlabeled ~ unlabeled_color[2],
+        is_labeled ~ labeled_color[2],
         TRUE ~ other_color[2]
       ),
       color_blue = dplyr::case_when(
-        grepl(unlabeled_samples_pattern, name) ~ unlabeled_color[3],
-        grepl(labeled_samples_pattern, name) ~ labeled_color[3],
+        is_unlabeled ~ unlabeled_color[3],
+        is_labeled ~ labeled_color[3],
         TRUE ~ other_color[3]
       ),
       setName = dplyr::case_when(
-        grepl(unlabeled_samples_pattern, name) ~ "unlabeled",
-        grepl(labeled_samples_pattern, name) ~ "labeled",
+        is_unlabeled ~ "unlabeled",
+        is_labeled ~ "labeled",
         TRUE ~ ""
       ),
-    )
-
-  # assume fewer than 100 replicates
-  unlabeled_order <- rep(-1, 100)
-  labeled_order <- rep(-1, 100)
-  other_order <- numeric(0)
-
-  for (i in seq_len(nrow(samples_tbl_recolored))) {
-    sample_id <- samples_tbl_recolored$sampleId[i]
-    ith_name <- samples_tbl_recolored$name[i]
-
-    replicate_num <- as.numeric(stringr::str_extract(
-      ith_name,
-      "\\d+(?=\\.mzML$)"
-    ))
-
-    # Sample names are not always formatted this way
-    if (is.na(replicate_num)) {
-      next
-    }
-
-    if (grepl(unlabeled_samples_pattern, ith_name)) {
-      unlabeled_order[replicate_num] <- sample_id
-    } else if (grepl(labeled_samples_pattern, ith_name)) {
-      labeled_order[replicate_num] <- sample_id
-    } else {
-      other_order <- c(other_order, sample_id)
-    }
-  }
-
-  unlabeled_order <- unlabeled_order[unlabeled_order != -1]
-  labeled_order <- labeled_order[labeled_order != -1]
-
-  # elements of order vector are IDs themselves
-  updated_order <- c(unlabeled_order, labeled_order, other_order)
-
-  if (length(updated_order) == nrow(samples_tbl_recolored)) {
-    samples_tbl_recolored <- samples_tbl_recolored[
-      match(updated_order, samples_tbl_recolored$sampleId),
-    ]
-    samples_tbl_recolored <- samples_tbl_recolored %>%
-      dplyr::mutate(sampleOrder = dplyr::row_number())
-  }
+    ) %>%
+    dplyr::select(-is_labeled, -is_unlabeled)
 
   return(samples_tbl_recolored)
 }
