@@ -14,7 +14,7 @@ PDB_labeled_groups_summary(mzrolldb_file_path, label_regex = "c")
 \value{
 formatted table based on high-scoring peakgroups with columns
 \code{groupId}, \code{compoundName}, \code{adductName}, \code{groupMz}, \code{groupRt},
-\code{ms2Score}, \code{groupRank}
+\code{ms2Score}, \code{groupRank}.
 }
 \description{
 returns a formatted table, containing all peak groups that match the label_regex,

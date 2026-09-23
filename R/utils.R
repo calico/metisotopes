@@ -837,6 +837,8 @@ compute_diff_scores <- function(
   return(diff_scores)
 }
 
+#' Compute Time-Emergent Diff linear model
+#'
 #' @param incorporation_subset list of isotope matrices that should be assessed for differences.
 #'
 #' @export

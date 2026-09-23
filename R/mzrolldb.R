@@ -128,9 +128,9 @@ PDB_peakgroups <- function(mzrolldb_file_path) {
 #' @param mzrolldb_file_path: file path to mzrolldb file
 #' @param label_regex regex for labels, will return all peak groups that match the regex
 #'
-#' @return formatted table based on high-scoring peakgroups with columns
+#' @returns formatted table based on high-scoring peakgroups with columns
 #' \code{groupId}, \code{compoundName}, \code{adductName}, \code{groupMz}, \code{groupRt},
-#' \code{ms2Score}, \code{groupRank}
+#' \code{ms2Score}, \code{groupRank}.
 #'
 #' @export
 PDB_labeled_groups_summary <- function(mzrolldb_file_path, label_regex="c") {
